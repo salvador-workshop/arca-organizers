@@ -79,6 +79,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
                     math.inchesToMm(4),
                     math.inchesToMm(1),
                 ],
+                holeDiam: math.inchesToMm(1 / 4),
+                holeDist: math.inchesToMm(1),
             },
             points: {
                 centrePt: [0, 0, 0]
@@ -101,6 +103,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const defaultOpts = {
             ...standardOpts,
             size: defaultValues.dims.size,
+            holeDiam: defaultValues.dims.holeDiam,
+            holeDist: defaultValues.dims.holeDist,
         }
 
         return {
@@ -127,6 +131,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         // User options
         const {
             size = defaults.opts.size,
+            holeDiam = defaults.opts.holeDiam,
+            holeDist = defaults.opts.holeDist,
             type = defaults.opts.type,
             scale = defaults.opts.scale,
             interfaceThickness = defaults.opts.interfaceThickness,
@@ -142,6 +148,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         const initOpts = {
             size,
+            holeDiam,
+            holeDist,
             ...stdOpts,
         }
 
@@ -259,6 +267,20 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
 
+        // Generate flat circular base
+        const ringBase = null
+
+        // Generate vertical reinforcements
+        const extReinforcement = null
+        const intReinforcement = null
+        const spokeReinforcementBase = null
+        const spokeReinforcements = null
+
+        // Combine all pieces and punch through ring assembly
+        const ringAssemblyBase = null
+        const ringPunch = null
+        const ringAssembly = null
+
         const mainModel = cuboid()
         const modelParts = {
             mainModel,
@@ -278,6 +300,17 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
 
+        // Generate flat base by cutting corners from a rectangle/square
+        const crossBlank = null
+        const crossBase = null
+
+        // Generate rectangular sub-sections
+        const centreReinforcement = null
+        const crossArmsReinforcement = null
+
+        // Combine all pieces
+        const crossPieceAssembly = null
+
         const mainModel = cuboid()
         const modelParts = {
             mainModel,
@@ -296,6 +329,15 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const defaults = pegboardDefaults()
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
+
+        // Generate flat base
+        const longPieceBase = null
+
+        // Generate reinforcements
+        const longPieceReinforcement = null
+
+        // Combine all pieces
+        const longPieceAssembly = null
 
         const mainModel = cuboid()
         const modelParts = {
