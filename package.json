@@ -1,7 +1,7 @@
 {
-  "name": "arca-foundry-js",
-  "version": "0.3.1-alpha.0",
-  "description": "Salvador Workshop's 3D components and designs, specified in Code-CAD",
+  "name": "arca-organizers",
+  "version": "0.1.1-alpha.0",
+  "description": "SW's Code-CAD tools for creating models of tools and utilities for organizing spaces.",
   "workspaces": [
     "packages/*"
   ],
@@ -16,11 +16,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+hhttps://github.com/salvador-workshop/arca-foundry-js.git"
+    "url": "git+hhttps://github.com/salvador-workshop/arca-organizers.git"
   },
   "devDependencies": {
     "@jscad/cli": "^2.3.8",
     "jsdoc": "^4.0.4"
+  },
+  "dependencies": {
+    "swcad-js": "^0.14.7"
   },
   "keywords": [
     "jscad",
@@ -30,7 +33,7 @@
   "author": "RJ Salvador (Salvador Workshop)",
   "license": "ISC",
   "bugs": {
-    "url": "hhttps://github.com/salvador-workshop/arca-foundry-js/issues"
+    "url": "hhttps://github.com/salvador-workshop/arca-organizers/issues"
   },
-  "homepage": "hhttps://github.com/salvador-workshop/arca-foundry-js"
+  "homepage": "hhttps://github.com/salvador-workshop/arca-organizers"
 }

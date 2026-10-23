@@ -1,6 +1,6 @@
 {
   "name": "pegboard",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha.0",
   "description": "ARCA pegboard generator",
   "homepage": "",
   "main": "src/index.js",
@@ -19,7 +19,9 @@
     "jscad"
   ],
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "swcad-js": "^0.14.7"
+  },
   "devDependencies": {
     "jsdoc": "^4.0.4"
   }
