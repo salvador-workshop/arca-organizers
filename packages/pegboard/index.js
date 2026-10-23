@@ -56,7 +56,7 @@ const { colorize } = jscad.colors
 
 const swcadJs = require('swcad-js').init({ jscad });
 
-const pegboardModule = require('./src')
+const pegboardModule = require('./src/index.js')
 const pegboard = pegboardModule.init({ jscad, swcadJs })
 
 const inchesToMm = (numIn) => numIn * 25.4
@@ -104,7 +104,11 @@ function main() {
     const spaceUnit = inchesToMm(3.5)
 
     return [
-        translate([spaceUnit * 0, spaceUnit * 0, spaceUnit * 0], newModel),
+        translate([spaceUnit * 0, spaceUnit * 0, spaceUnit * 0], pegboardRing),
+        translate([spaceUnit * 1, spaceUnit * 0, spaceUnit * 0], pegboardMidPiece),
+        translate([spaceUnit * 2, spaceUnit * 0, spaceUnit * 0], pegboardLongPiece),
+        translate([spaceUnit * 3, spaceUnit * 0, spaceUnit * 0], pegboardCrossPiece),
+        translate([spaceUnit * 4, spaceUnit * 0, spaceUnit * 0], pegboardEdges),
     ]
 }
 

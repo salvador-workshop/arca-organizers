@@ -196,16 +196,20 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         * Prop calculations
         * ------------------------------------- */
 
+        const diagFactor = Math.sqrt(2)
+
         const width = size[0]
         const depth = size[1]
         const height = size[2]
 
         const ringDiam = holeDiam * 3
-        const crossPieceLength = 0
-        const midPieceLength = 0
-        const ringConnectorLength = 0
-        const xEdgeLength = 0
-        const yEdgeLength = 0
+
+        const crossPieceLength = holeDist * diagFactor - ringDiam + interfaceThickness
+        const midPieceLength = connectorWidth
+        const ringConnectorLength = holeDist - ringDiam + interfaceThickness
+
+        const xEdgeLength = width - (midPieceLength * 2)
+        const yEdgeLength = depth - (midPieceLength * 2)
 
         /* ----------------------------------------
         * Preparing Model Properties, Dimensions
@@ -312,23 +316,35 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         } = modelProperties.dims
 
         // Generate flat circular base
-        const ringBase = cylinder()
+        const ringBase = cylinder({
+            height: interfaceThickness,
+            radius: ringDiam
+        })
 
         // Generate vertical reinforcements
-        const extReinforcementBase = cylinder()
-        const extReinforcementCutaway = cylinder()
+        const extReinforcementBase = cylinder({
+            height: interfaceThickness,
+            radius: ringDiam
+        })
+        const extReinforcementCutaway = cylinder({
+            height: interfaceThickness,
+            radius: ringDiam
+        })
         const extReinforcement = subtract(
             extReinforcementBase,
             extReinforcementCutaway
         )
-        const intReinforcement = cylinder()
+        const intReinforcement = cylinder({
+            height: interfaceThickness,
+            radius: ringDiam
+        })
 
-        const spokeReinforcementBase = cuboid()
+        const spokeReinforcementBase = cuboid({ size: [interfaceThickness, ringDiam, height] })
         const spokeReinforcements = union(
             spokeReinforcementBase,
-            rotate({}, spokeReinforcementBase),
-            rotate({}, spokeReinforcementBase),
-            rotate({}, spokeReinforcementBase),
+            rotate([0, 0, TAU / 4], spokeReinforcementBase),
+            rotate([0, 0, TAU / 2], spokeReinforcementBase),
+            rotate([0, 0, TAU * 0.75], spokeReinforcementBase),
         )
 
         // Combine all pieces and punch through ring assembly
@@ -338,7 +354,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             intReinforcement,
             spokeReinforcements,
         )
-        const ringPunch = cylinder()
+        const ringPunch = cylinder({
+            height: interfaceThickness,
+            radius: ringDiam
+        })
         const ringAssembly = subtract(
             ringAssemblyBase,
             ringPunch
@@ -381,13 +400,13 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         } = modelProperties.dims
 
         // Generate flat base
-        const midPieceBase = cuboid()
+        const midPieceBase = cuboid({ size: [midPieceLength, midPieceLength, interfaceThickness] })
 
         // Generate reinforcement
         const midPieceReinforcement = reinforcedRectPanel({
-            size: [40, 45, 3],
+            size: [midPieceLength, midPieceLength, height],
             reinforcementPattern: 'x'
-        })
+        })[0]
 
         // Combine all pieces
         const midPieceAssembly = union(midPieceBase, midPieceReinforcement)
@@ -429,13 +448,13 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         } = modelProperties.dims
 
         // Generate flat base
-        const longPieceBase = cuboid()
+        const longPieceBase = cuboid({ size: [ringConnectorLength, connectorWidth, interfaceThickness] })
 
         // Generate reinforcements
         const longPieceReinforcement = reinforcedRectPanel({
-            size: [40, 45, 3],
+            size: [ringConnectorLength, connectorWidth, interfaceThickness],
             reinforcementPattern: 'x'
-        })
+        })[0]
 
         // Combine all pieces
         const longPieceAssembly = union(longPieceBase, longPieceReinforcement)
@@ -477,19 +496,19 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         } = modelProperties.dims
 
         // Generate rectangular sub-sections
-        const midPiece = pegboardMidPiece(initOpts)
+        const midPiece = pegboardMidPiece(initOpts)[0]
         const crossArmBase = translate(
-            {},
-            pegboardLongPiece(initOpts)
+            [midPieceLength / 2, 0, 0],
+            pegboardLongPiece(initOpts)[0]
         )
 
         // Combine all pieces
         const crossPieceAssembly = union(
             midPiece,
             crossArmBase,
-            rotate({}, crossArmBase),
-            rotate({}, crossArmBase),
-            rotate({}, crossArmBase),
+            rotate([0, 0, TAU / 4], crossArmBase),
+            rotate([0, 0, TAU / 2], crossArmBase),
+            rotate([0, 0, TAU * 0.75], crossArmBase),
         )
 
         const mainModel = crossPieceAssembly
@@ -529,20 +548,20 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         } = modelProperties.dims
 
         // Generate sub-sections
-        const cornerPieceBase = pegboardMidPiece(initOpts)
-        const xEdgeLengthBase = pegboardLongPiece(initOpts)
-        const yEdgeLengthBase = pegboardLongPiece(initOpts)
+        const cornerPieceBase = pegboardMidPiece(initOpts)[0]
+        const xEdgeLengthBase = pegboardLongPiece(initOpts)[0]
+        const yEdgeLengthBase = pegboardLongPiece(initOpts)[0]
 
         // Combine all pieces
         const edgeAssembly = union(
             cornerPieceBase,
-            translate({}, cornerPieceBase),
-            translate({}, cornerPieceBase),
-            translate({}, cornerPieceBase),
+            translate([width, 0, 0], cornerPieceBase),
+            translate([0, depth, 0], cornerPieceBase),
+            translate([width, depth, 0], cornerPieceBase),
             xEdgeLengthBase,
-            translate({}, xEdgeLengthBase),
+            translate([0, depth, 0], xEdgeLengthBase),
             yEdgeLengthBase,
-            translate({}, yEdgeLengthBase),
+            translate([width, 0, 0], yEdgeLengthBase),
         )
 
         const mainModel = edgeAssembly

@@ -3,7 +3,7 @@
   "version": "0.1.1-alpha.0",
   "description": "ARCA pegboard generator",
   "homepage": "",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
     "docs": "jsdoc src -r -d docs -c jsdoc.json --readme readme.md",
     "test": "npx gulp"
