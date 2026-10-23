@@ -205,12 +205,13 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         const ringDiam = holeDiam * 2.5
 
-        const crossPieceLength = holeDist * diagFactor - ringDiam + interfaceThickness
         const midPieceLength = connectorWidth
+        const crossPieceLengthTotal = holeDist * diagFactor - ringDiam
+        const crossPieceLength = crossPieceLengthTotal / 2 + + interfaceThickness
         const ringConnectorLength = holeDist - ringDiam + interfaceThickness
 
-        const xEdgeLength = width - (midPieceLength * 2)
-        const yEdgeLength = depth - (midPieceLength * 2)
+        const xEdgeLength = width - (midPieceLength * 2) + interfaceThickness
+        const yEdgeLength = depth - (midPieceLength * 2) + interfaceThickness
 
         /* ----------------------------------------
         * Preparing Model Properties, Dimensions
@@ -289,17 +290,16 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     * ------------------------------------- */
 
     const reinforcedUnit = (opts) => {
-        const defaults = pegboardDefaults()
-        const { size, interfaceThickness } = opts
+        const { size, baseThickness, reinfThickness } = opts
 
         // Generate flat base
-        const reinfUnitBase = cuboid({ size: [size[0], size[1], interfaceThickness] })
+        const reinfUnitBase = cuboid({ size: [size[0], size[1], baseThickness] })
 
         // Generate reinforcement
         const reinfUnitReinforcement = reinforcedRectPanel({
             size,
             reinforcementPattern: 'x',
-            reinforcementThickness: [1.125, 1.125, 1.125]
+            reinforcementThickness: [reinfThickness, reinfThickness, reinfThickness]
         })[0]
 
         // Combine all pieces
@@ -312,18 +312,41 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     const reinforcedEdgeUnit = (opts) => {
-        const defaults = pegboardDefaults()
-        const { size, holeDist, interfaceThickness } = opts
+        const { size, unitLength, baseThickness, reinfThickness } = opts
+        const numUnits = Math.ceil(size[0] / unitLength) + 1
 
         const reinfEdgeUnitBase = reinforcedUnit({
-            size: [holeDist, size[1], size[2]],
-            interfaceThickness,
+            size: [unitLength, size[1], size[2]],
+            baseThickness,
+            reinfThickness,
         })
 
         // Attach unit base segments until the desired length is reached.
-        // Cap with reinforcement segments if needed.
+        let reinfEdgePieceAssembly = reinfEdgeUnitBase
+        for (let assemblyIdx = 0; assemblyIdx < numUnits; assemblyIdx++) {
+            const currentOffset = assemblyIdx * unitLength - reinfThickness
+            reinfEdgePieceAssembly = union(
+                reinfEdgePieceAssembly,
+                translate(
+                    [currentOffset, 0, 0],
+                    reinfEdgeUnitBase
+                )
+            )
+        }
 
-        return position.ctr(reinfEdgeUnitBase)
+        const keepBox = cuboid({
+            size: [
+                size[0],
+                size[1] * 1.5,
+                size[2] * 1.5,
+            ]
+        })
+        const reinfEdgePiece = intersect(
+            position.ctr(reinfEdgePieceAssembly),
+            keepBox
+        )
+
+        return position.ctr(reinfEdgePiece)
     }
 
     /**
@@ -440,7 +463,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         const mainModel = reinforcedUnit({
             size: [midPieceLength, midPieceLength, height],
-            interfaceThickness
+            baseThickness: interfaceThickness,
+            reinfThickness: 1.125
         })
         const modelParts = {
             mainModel,
@@ -479,7 +503,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         const mainModel = reinforcedUnit({
             size: [ringConnectorLength, connectorWidth, height],
-            interfaceThickness
+            baseThickness: interfaceThickness,
+            reinfThickness: 1.125
         })
         const modelParts = {
             mainModel,
@@ -521,12 +546,13 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         const crossArmBase = reinforcedUnit({
             size: [crossPieceLength, connectorWidth, height],
-            interfaceThickness
+            baseThickness: interfaceThickness,
+            reinfThickness: 1.125
         })
 
         const crossArmBaseAdj = align({
             modes: ['min', 'center', 'center'],
-            relativeTo: [midPieceLength / 2 - interfaceThickness, 0, 0]
+            relativeTo: [midPieceLength / 2 - 1.125, 0, 0]
         }, crossArmBase)
 
         // Combine all pieces
@@ -577,29 +603,66 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         // Generate sub-sections
         const cornerPieceBase = pegboardMidPiece(initOpts)[0]
         const xEdgeLengthBase = reinforcedEdgeUnit({
-            size: [width, connectorWidth, height],
-            holeDist,
-            interfaceThickness
+            size: [xEdgeLength, connectorWidth, height],
+            unitLength: holeDist,
+            baseThickness: interfaceThickness,
+            reinfThickness: 1.125,
         })
         const yEdgeLengthBase = rotate(
             [0, 0, TAU / 4],
             reinforcedEdgeUnit({
-                size: [depth, connectorWidth, height],
-                holeDist,
-                interfaceThickness
+                size: [yEdgeLength, connectorWidth, height],
+                unitLength: holeDist,
+                baseThickness: interfaceThickness,
+                reinfThickness: 1.125,
             })
         )
 
+        const edgePoints = {
+            topRight: [width / 2, depth / 2, 0],
+            bottomRight: [width / 2, depth / -2, 0],
+            topLeft: [width / -2, depth / 2, 0],
+            bottomLeft: [width / -2, depth / -2, 0],
+            top: [0, depth / 2, 0],
+            right: [width / 2, 0, 0],
+            bottom: [0, depth / -2, 0],
+            left: [width / -2, 0, 0],
+        }
+
         // Combine all pieces
         const edgeAssembly = union(
-            cornerPieceBase,
-            translate([width, 0, 0], cornerPieceBase),
-            translate([0, depth, 0], cornerPieceBase),
-            translate([width, depth, 0], cornerPieceBase),
-            xEdgeLengthBase,
-            translate([0, depth, 0], xEdgeLengthBase),
-            yEdgeLengthBase,
-            translate([width, 0, 0], yEdgeLengthBase),
+            align({
+                modes: ['max', 'max', 'center'],
+                relativeTo: edgePoints.topRight
+            }, cornerPieceBase),
+            align({
+                modes: ['max', 'min', 'center'],
+                relativeTo: edgePoints.bottomRight
+            }, cornerPieceBase),
+            align({
+                modes: ['min', 'max', 'center'],
+                relativeTo: edgePoints.topLeft
+            }, cornerPieceBase),
+            align({
+                modes: ['min', 'min', 'center'],
+                relativeTo: edgePoints.bottomLeft
+            }, cornerPieceBase),
+            align({
+                modes: ['center', 'max', 'center'],
+                relativeTo: edgePoints.top
+            }, xEdgeLengthBase),
+            align({
+                modes: ['center', 'min', 'center'],
+                relativeTo: edgePoints.bottom
+            }, xEdgeLengthBase),
+            align({
+                modes: ['min', 'center', 'center'],
+                relativeTo: edgePoints.left
+            }, yEdgeLengthBase),
+            align({
+                modes: ['max', 'center', 'center'],
+                relativeTo: edgePoints.right
+            }, yEdgeLengthBase),
         )
 
         const mainModel = edgeAssembly
