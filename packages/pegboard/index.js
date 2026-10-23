@@ -54,6 +54,11 @@ const { toOutlines } = jscad.geometries.geom2
 const { TAU } = jscad.maths.constants
 const { colorize } = jscad.colors
 
+const swcadJs = require('swcad-js').init({ jscad });
+
+const pegboardModule = require('./src')
+const pegboard = pegboardModule.init({ jscad, swcadJs })
+
 const inchesToMm = (numIn) => numIn * 25.4
 
 
@@ -64,10 +69,25 @@ const inchesToMm = (numIn) => numIn * 25.4
  * Test subjects
  * ------------------------------------- */
 
-const newModelOpts = {
-    size: [inchesToMm(3), inchesToMm(3), inchesToMm(1)],
-}
-const newModel = cuboid(newModelOpts)
+const pegboardRing = pegboard.pegboardRing({
+    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+})[0]
+
+const pegboardMidPiece = pegboard.pegboardMidPiece({
+    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+})[0]
+
+const pegboardLongPiece = pegboard.pegboardLongPiece({
+    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+})[0]
+
+const pegboardCrossPiece = pegboard.pegboardCrossPiece({
+    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+})[0]
+
+const pegboardEdges = pegboard.pegboardEdges({
+    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+})[0]
 
 
 

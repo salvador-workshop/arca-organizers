@@ -59,6 +59,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         math,
     } = swcadJs.calcs
 
+    const {
+        reinforcedRectPanel,
+    } = swcadJs.components
+
 
     //==============================================================================
 
@@ -81,6 +85,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
                 ],
                 holeDiam: math.inchesToMm(1 / 4),
                 holeDist: math.inchesToMm(1),
+                connectorWidth: math.inchesToMm(1 / 4),
             },
             points: {
                 centrePt: [0, 0, 0]
@@ -105,6 +110,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size: defaultValues.dims.size,
             holeDiam: defaultValues.dims.holeDiam,
             holeDist: defaultValues.dims.holeDist,
+            connectorWidth: defaultValues.dims.connectorWidth,
         }
 
         return {
@@ -133,6 +139,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size = defaults.opts.size,
             holeDiam = defaults.opts.holeDiam,
             holeDist = defaults.opts.holeDist,
+            connectorWidth = defaults.opts.connectorWidth,
             type = defaults.opts.type,
             scale = defaults.opts.scale,
             interfaceThickness = defaults.opts.interfaceThickness,
@@ -150,6 +157,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size,
             holeDiam,
             holeDist,
+            connectorWidth,
             ...stdOpts,
         }
 
@@ -175,6 +183,9 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         const {
             size,
+            holeDiam,
+            holeDist,
+            connectorWidth,
             type,
             scale,
             interfaceThickness,
@@ -188,6 +199,13 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const width = size[0]
         const depth = size[1]
         const height = size[2]
+
+        const ringDiam = holeDiam * 3
+        const crossPieceLength = 0
+        const midPieceLength = 0
+        const ringConnectorLength = 0
+        const xEdgeLength = 0
+        const yEdgeLength = 0
 
         /* ----------------------------------------
         * Preparing Model Properties, Dimensions
@@ -209,6 +227,15 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             width,
             depth,
             height,
+            holeDiam,
+            holeDist,
+            connectorWidth,
+            ringDiam,
+            crossPieceLength,
+            midPieceLength,
+            ringConnectorLength,
+            xEdgeLength,
+            yEdgeLength,
             interfaceThickness,
             fitGap,
         }
@@ -267,21 +294,57 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
 
+        const {
+            width,
+            depth,
+            height,
+            holeDiam,
+            holeDist,
+            connectorWidth,
+            ringDiam,
+            crossPieceLength,
+            midPieceLength,
+            ringConnectorLength,
+            xEdgeLength,
+            yEdgeLength,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.dims
+
         // Generate flat circular base
-        const ringBase = null
+        const ringBase = cylinder()
 
         // Generate vertical reinforcements
-        const extReinforcement = null
-        const intReinforcement = null
-        const spokeReinforcementBase = null
-        const spokeReinforcements = null
+        const extReinforcementBase = cylinder()
+        const extReinforcementCutaway = cylinder()
+        const extReinforcement = subtract(
+            extReinforcementBase,
+            extReinforcementCutaway
+        )
+        const intReinforcement = cylinder()
+
+        const spokeReinforcementBase = cuboid()
+        const spokeReinforcements = union(
+            spokeReinforcementBase,
+            rotate({}, spokeReinforcementBase),
+            rotate({}, spokeReinforcementBase),
+            rotate({}, spokeReinforcementBase),
+        )
 
         // Combine all pieces and punch through ring assembly
-        const ringAssemblyBase = null
-        const ringPunch = null
-        const ringAssembly = null
+        const ringAssemblyBase = union(
+            ringBase,
+            extReinforcement,
+            intReinforcement,
+            spokeReinforcements,
+        )
+        const ringPunch = cylinder()
+        const ringAssembly = subtract(
+            ringAssemblyBase,
+            ringPunch
+        )
 
-        const mainModel = cuboid()
+        const mainModel = ringAssembly
         const modelParts = {
             mainModel,
         }
@@ -290,28 +353,46 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     /**
-     * Generates cross piece, which connects pegboard rings
+     * Generates mid piece, for where connecting pieces intersect
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
      * @memberof newModelParent
      */
-    const pegboardCrossPiece = (opts) => {
+    const pegboardMidPiece = (opts) => {
         const defaults = pegboardDefaults()
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
 
-        // Generate flat base by cutting corners from a rectangle/square
-        const crossBlank = null
-        const crossBase = null
+        const {
+            width,
+            depth,
+            height,
+            holeDiam,
+            holeDist,
+            connectorWidth,
+            ringDiam,
+            crossPieceLength,
+            midPieceLength,
+            ringConnectorLength,
+            xEdgeLength,
+            yEdgeLength,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.dims
 
-        // Generate rectangular sub-sections
-        const centreReinforcement = null
-        const crossArmsReinforcement = null
+        // Generate flat base
+        const midPieceBase = cuboid()
+
+        // Generate reinforcement
+        const midPieceReinforcement = reinforcedRectPanel({
+            size: [40, 45, 3],
+            reinforcementPattern: 'x'
+        })
 
         // Combine all pieces
-        const crossPieceAssembly = null
+        const midPieceAssembly = union(midPieceBase, midPieceReinforcement)
 
-        const mainModel = cuboid()
+        const mainModel = midPieceAssembly
         const modelParts = {
             mainModel,
         }
@@ -330,16 +411,141 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
 
+        const {
+            width,
+            depth,
+            height,
+            holeDiam,
+            holeDist,
+            connectorWidth,
+            ringDiam,
+            crossPieceLength,
+            midPieceLength,
+            ringConnectorLength,
+            xEdgeLength,
+            yEdgeLength,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.dims
+
         // Generate flat base
-        const longPieceBase = null
+        const longPieceBase = cuboid()
 
         // Generate reinforcements
-        const longPieceReinforcement = null
+        const longPieceReinforcement = reinforcedRectPanel({
+            size: [40, 45, 3],
+            reinforcementPattern: 'x'
+        })
 
         // Combine all pieces
-        const longPieceAssembly = null
+        const longPieceAssembly = union(longPieceBase, longPieceReinforcement)
 
-        const mainModel = cuboid()
+        const mainModel = longPieceAssembly
+        const modelParts = {
+            mainModel,
+        }
+
+        return [mainModel, modelParts, modelProperties]
+    }
+
+    /**
+     * Generates cross piece, which connects pegboard rings
+     * @param {*} opts 
+     * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
+     * @memberof newModelParent
+     */
+    const pegboardCrossPiece = (opts) => {
+        const defaults = pegboardDefaults()
+        const initOpts = pegboardOpts(opts)
+        const modelProperties = pegboardProps(initOpts)
+
+        const {
+            width,
+            depth,
+            height,
+            holeDiam,
+            holeDist,
+            connectorWidth,
+            ringDiam,
+            crossPieceLength,
+            midPieceLength,
+            ringConnectorLength,
+            xEdgeLength,
+            yEdgeLength,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.dims
+
+        // Generate rectangular sub-sections
+        const midPiece = pegboardMidPiece(initOpts)
+        const crossArmBase = translate(
+            {},
+            pegboardLongPiece(initOpts)
+        )
+
+        // Combine all pieces
+        const crossPieceAssembly = union(
+            midPiece,
+            crossArmBase,
+            rotate({}, crossArmBase),
+            rotate({}, crossArmBase),
+            rotate({}, crossArmBase),
+        )
+
+        const mainModel = crossPieceAssembly
+        const modelParts = {
+            mainModel,
+        }
+
+        return [mainModel, modelParts, modelProperties]
+    }
+
+    /**
+     * Generates edges of pegboard
+     * @param {*} opts 
+     * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
+     * @memberof newModelParent
+     */
+    const pegboardEdges = (opts) => {
+        const defaults = pegboardDefaults()
+        const initOpts = pegboardOpts(opts)
+        const modelProperties = pegboardProps(initOpts)
+
+        const {
+            width,
+            depth,
+            height,
+            holeDiam,
+            holeDist,
+            connectorWidth,
+            ringDiam,
+            crossPieceLength,
+            midPieceLength,
+            ringConnectorLength,
+            xEdgeLength,
+            yEdgeLength,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.dims
+
+        // Generate sub-sections
+        const cornerPieceBase = pegboardMidPiece(initOpts)
+        const xEdgeLengthBase = pegboardLongPiece(initOpts)
+        const yEdgeLengthBase = pegboardLongPiece(initOpts)
+
+        // Combine all pieces
+        const edgeAssembly = union(
+            cornerPieceBase,
+            translate({}, cornerPieceBase),
+            translate({}, cornerPieceBase),
+            translate({}, cornerPieceBase),
+            xEdgeLengthBase,
+            translate({}, xEdgeLengthBase),
+            yEdgeLengthBase,
+            translate({}, yEdgeLengthBase),
+        )
+
+        const mainModel = edgeAssembly
         const modelParts = {
             mainModel,
         }
@@ -370,8 +576,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         defaults: pegboardDefaults,
         props: pegboardProps,
         pegboardRing,
-        pegboardCrossPiece,
+        pegboardMidPiece,
         pegboardLongPiece,
+        pegboardCrossPiece,
+        pegboardEdges,
         pegboard,
     }
 }
