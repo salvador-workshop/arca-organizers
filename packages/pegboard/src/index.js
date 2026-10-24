@@ -2,54 +2,23 @@
 
 const pegboardInit = ({ jscad, swcadJs }) => {
     const {
-        cube,
         cylinder,
-        sphere,
-        cylinderElliptic,
-        circle,
         cuboid,
-        roundedCuboid,
-        roundedCylinder,
-        roundedRectangle,
-        rectangle,
-        triangle,
     } = jscad.primitives
 
     const {
         align,
         translate,
         rotate,
-        mirror
     } = jscad.transforms
 
     const {
         intersect,
         subtract,
         union,
-        scission
     } = jscad.booleans
 
-    const {
-        extrudeLinear,
-        extrudeRotate,
-        project
-    } = jscad.extrusions
-
-    const {
-        measureDimensions,
-        measureBoundingBox,
-        measureVolume
-    } = jscad.measurements
-
-    const {
-        hull,
-        hullChain
-    } = jscad.hulls
-
-    const { vectorText } = jscad.text
-    const { toOutlines } = jscad.geometries.geom2
     const { TAU } = jscad.maths.constants
-    const { colorize } = jscad.colors
 
     const {
         standards,
@@ -58,6 +27,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     const {
         math,
         position,
+        geometry,
     } = swcadJs.calcs
 
     const {
@@ -80,13 +50,15 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const defaultValues = {
             dims: {
                 size: [
-                    math.inchesToMm(2),
                     math.inchesToMm(4),
-                    math.inchesToMm(1),
+                    math.inchesToMm(4),
+                    math.inchesToMm(1 / 8),
                 ],
                 holeDiam: math.inchesToMm(1 / 4),
                 holeDist: math.inchesToMm(1),
-                connectorWidth: math.inchesToMm(1 / 4),
+                connectorWidth: math.inchesToMm(7 / 32),
+                lightConnectorWidth: math.inchesToMm(5 / 32),
+                lightInterfaceThickness: 1.125,
             },
             points: {
                 centrePt: [0, 0, 0]
@@ -112,6 +84,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             holeDiam: defaultValues.dims.holeDiam,
             holeDist: defaultValues.dims.holeDist,
             connectorWidth: defaultValues.dims.connectorWidth,
+            lightConnectorWidth: defaultValues.dims.lightConnectorWidth,
+            lightInterfaceThickness: defaultValues.dims.lightInterfaceThickness,
         }
 
         return {
@@ -141,6 +115,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             holeDiam = defaults.opts.holeDiam,
             holeDist = defaults.opts.holeDist,
             connectorWidth = defaults.opts.connectorWidth,
+            lightConnectorWidth = defaults.opts.lightConnectorWidth,
             type = defaults.opts.type,
             scale = defaults.opts.scale,
             interfaceThickness = defaults.opts.interfaceThickness,
@@ -159,6 +134,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             holeDiam,
             holeDist,
             connectorWidth,
+            lightConnectorWidth,
             ...stdOpts,
         }
 
@@ -187,6 +163,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             holeDiam,
             holeDist,
             connectorWidth,
+            lightConnectorWidth,
             type,
             scale,
             interfaceThickness,
@@ -198,6 +175,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         * ------------------------------------- */
 
         const diagFactor = Math.sqrt(2)
+        const lightInterfaceThickness = defaults.opts.lightInterfaceThickness
 
         const width = size[0]
         const depth = size[1]
@@ -207,7 +185,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         const midPieceLength = connectorWidth
         const crossPieceLengthTotal = holeDist * diagFactor - ringDiam
-        const crossPieceLength = crossPieceLengthTotal / 2 + + interfaceThickness
+        const crossPieceLength = (crossPieceLengthTotal - midPieceLength) / 2 + (interfaceThickness * 2)
         const ringConnectorLength = holeDist - ringDiam + interfaceThickness
 
         const xEdgeLength = width - (midPieceLength * 2) + interfaceThickness
@@ -236,13 +214,16 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             holeDiam,
             holeDist,
             connectorWidth,
+            lightConnectorWidth,
             ringDiam,
+            crossPieceLengthTotal,
             crossPieceLength,
             midPieceLength,
             ringConnectorLength,
             xEdgeLength,
             yEdgeLength,
             interfaceThickness,
+            lightInterfaceThickness,
             fitGap,
         }
 
@@ -324,7 +305,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         // Attach unit base segments until the desired length is reached.
         let reinfEdgePieceAssembly = reinfEdgeUnitBase
         for (let assemblyIdx = 0; assemblyIdx < numUnits; assemblyIdx++) {
-            const currentOffset = assemblyIdx * unitLength - reinfThickness
+            const currentOffset = assemblyIdx * (unitLength - reinfThickness)
             reinfEdgePieceAssembly = union(
                 reinfEdgePieceAssembly,
                 translate(
@@ -349,6 +330,24 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         return position.ctr(reinfEdgePiece)
     }
 
+    const lightReinforcedUnit = (opts) => {
+        const { size, baseThickness, reinfThickness } = opts
+
+        // Generate flat base
+        const lightReinfUnitBase = cuboid({ size: [size[0], size[1], baseThickness] })
+
+        // Generate reinforcement
+        const lightReinfUnitReinforcement = cuboid({ size: [size[0], reinfThickness, size[2]] })
+
+        // Combine all pieces
+        const lightReinfUnitAssembly = union(
+            position.ctrMin(lightReinfUnitBase),
+            position.ctrMin(lightReinfUnitReinforcement)
+        )
+
+        return position.ctr(lightReinfUnitAssembly)
+    }
+
     /**
      * Generates pegboard ring (donut)
      * @param {*} opts 
@@ -361,20 +360,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const modelProperties = pegboardProps(initOpts)
 
         const {
-            width,
-            depth,
             height,
             holeDiam,
-            holeDist,
-            connectorWidth,
             ringDiam,
-            crossPieceLength,
-            midPieceLength,
-            ringConnectorLength,
-            xEdgeLength,
-            yEdgeLength,
             interfaceThickness,
-            fitGap,
         } = modelProperties.dims
 
         // Generate flat circular base
@@ -445,26 +434,16 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const modelProperties = pegboardProps(initOpts)
 
         const {
-            width,
-            depth,
             height,
-            holeDiam,
-            holeDist,
-            connectorWidth,
-            ringDiam,
-            crossPieceLength,
             midPieceLength,
-            ringConnectorLength,
-            xEdgeLength,
-            yEdgeLength,
             interfaceThickness,
-            fitGap,
+            lightInterfaceThickness,
         } = modelProperties.dims
 
         const mainModel = reinforcedUnit({
             size: [midPieceLength, midPieceLength, height],
             baseThickness: interfaceThickness,
-            reinfThickness: 1.125
+            reinfThickness: lightInterfaceThickness
         })
         const modelParts = {
             mainModel,
@@ -485,26 +464,17 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const modelProperties = pegboardProps(initOpts)
 
         const {
-            width,
-            depth,
             height,
-            holeDiam,
-            holeDist,
-            connectorWidth,
-            ringDiam,
-            crossPieceLength,
-            midPieceLength,
+            lightConnectorWidth,
             ringConnectorLength,
-            xEdgeLength,
-            yEdgeLength,
             interfaceThickness,
-            fitGap,
+            lightInterfaceThickness,
         } = modelProperties.dims
 
-        const mainModel = reinforcedUnit({
-            size: [ringConnectorLength, connectorWidth, height],
+        const mainModel = lightReinforcedUnit({
+            size: [ringConnectorLength, lightConnectorWidth, height],
             baseThickness: interfaceThickness,
-            reinfThickness: 1.125
+            reinfThickness: lightInterfaceThickness
         })
         const modelParts = {
             mainModel,
@@ -525,46 +495,26 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const modelProperties = pegboardProps(initOpts)
 
         const {
-            width,
-            depth,
             height,
-            holeDiam,
-            holeDist,
-            connectorWidth,
-            ringDiam,
-            crossPieceLength,
-            midPieceLength,
-            ringConnectorLength,
-            xEdgeLength,
-            yEdgeLength,
+            lightConnectorWidth,
+            crossPieceLengthTotal,
             interfaceThickness,
-            fitGap,
+            lightInterfaceThickness,
         } = modelProperties.dims
 
-        // Generate rectangular sub-sections
-        const midPiece = pegboardMidPiece(initOpts)[0]
-
-        const crossArmBase = reinforcedUnit({
-            size: [crossPieceLength, connectorWidth, height],
+        const crossArmBase = lightReinforcedUnit({
+            size: [crossPieceLengthTotal + interfaceThickness, lightConnectorWidth, height],
             baseThickness: interfaceThickness,
-            reinfThickness: 1.125
+            reinfThickness: lightInterfaceThickness
         })
-
-        const crossArmBaseAdj = align({
-            modes: ['min', 'center', 'center'],
-            relativeTo: [midPieceLength / 2 - 1.125, 0, 0]
-        }, crossArmBase)
 
         // Combine all pieces
         const crossPieceAssembly = union(
-            midPiece,
-            crossArmBaseAdj,
-            rotate([0, 0, TAU / 4], crossArmBaseAdj),
-            rotate([0, 0, TAU / 2], crossArmBaseAdj),
-            rotate([0, 0, TAU * 0.75], crossArmBaseAdj),
+            crossArmBase,
+            rotate([0, 0, TAU / 4], crossArmBase),
         )
 
-        const mainModel = crossPieceAssembly
+        const mainModel = rotate([0, 0, TAU / 8], crossPieceAssembly)
         const modelParts = {
             mainModel,
         }
@@ -587,17 +537,12 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             width,
             depth,
             height,
-            holeDiam,
             holeDist,
             connectorWidth,
-            ringDiam,
-            crossPieceLength,
-            midPieceLength,
-            ringConnectorLength,
             xEdgeLength,
             yEdgeLength,
             interfaceThickness,
-            fitGap,
+            lightInterfaceThickness,
         } = modelProperties.dims
 
         // Generate sub-sections
@@ -606,7 +551,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size: [xEdgeLength, connectorWidth, height],
             unitLength: holeDist,
             baseThickness: interfaceThickness,
-            reinfThickness: 1.125,
+            reinfThickness: lightInterfaceThickness,
         })
         const yEdgeLengthBase = rotate(
             [0, 0, TAU / 4],
@@ -614,7 +559,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
                 size: [yEdgeLength, connectorWidth, height],
                 unitLength: holeDist,
                 baseThickness: interfaceThickness,
-                reinfThickness: 1.125,
+                reinfThickness: lightInterfaceThickness,
             })
         )
 
@@ -684,7 +629,67 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
 
-        const mainModel = cuboid()
+        const {
+            width,
+            depth,
+            height,
+            holeDist,
+            xEdgeLength,
+            yEdgeLength,
+            interfaceThickness,
+        } = modelProperties.dims
+
+        // Determine hole points and various connection points
+        const connectionPtExt = holeDist * 0.75
+        const crossPointSize = [width + connectionPtExt, depth + connectionPtExt]
+
+        const baseRing = pegboardRing(opts)[0]
+        const baseLongPiece = pegboardLongPiece(opts)[0]
+        const baseCrossPiece = pegboardCrossPiece(opts)[0]
+
+        const holePts = geometry.getSquarePtsInArea(width - interfaceThickness, depth - interfaceThickness, holeDist)
+        const rings = holePts.map((holePt) => {
+            const currentPt = [holePt.x, holePt.y, 0]
+            return translate(currentPt, baseRing)
+        })
+
+        const crossPtsRaw = geometry.getSquarePtsInArea(crossPointSize[0], crossPointSize[1], holeDist)
+        const crossPts = crossPtsRaw.map(cPtRaw => [cPtRaw.x, cPtRaw.y, 0])
+        const crosses = crossPts.map((crossPt) => {
+            return translate(crossPt, baseCrossPiece)
+        })
+
+        const longPtsX = crossPtsRaw.map(cPtRaw => [cPtRaw.x, cPtRaw.y + (holeDist / 2), 0])
+        const longPiecesX = longPtsX.map((longPtX) => {
+            return translate(longPtX, baseLongPiece)
+        })
+        const longPtsY = crossPtsRaw.map(cPtRaw => [cPtRaw.x + (holeDist / 2), cPtRaw.y, 0])
+        const longPiecesY = longPtsY.map((longPtX) => {
+            return translate(longPtX, rotate([0, 0, TAU / 4], baseLongPiece))
+        })
+
+        const mainAssemblyBase = union(
+            ...rings,
+            ...crosses,
+            longPiecesX,
+            longPiecesY,
+        )
+        const mainAssemblyKeepBox = cuboid({
+            size: [
+                xEdgeLength,
+                yEdgeLength,
+                height * 2
+            ]
+        })
+        const mainAssembly = intersect(mainAssemblyBase, mainAssemblyKeepBox)
+
+        const edges = pegboardEdges(opts)[0]
+
+        const mainModel = union(
+            mainAssembly,
+            edges,
+        )
+
         const modelParts = {
             mainModel,
         }
