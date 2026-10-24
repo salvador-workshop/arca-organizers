@@ -58,6 +58,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     const {
         math,
         position,
+        geometry,
     } = swcadJs.calcs
 
     const {
@@ -86,7 +87,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
                 ],
                 holeDiam: math.inchesToMm(1 / 4),
                 holeDist: math.inchesToMm(1),
-                connectorWidth: math.inchesToMm(1 / 4),
+                connectorWidth: math.inchesToMm(7 / 32),
             },
             points: {
                 centrePt: [0, 0, 0]
@@ -206,8 +207,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const ringDiam = holeDiam * 2.5
 
         const midPieceLength = connectorWidth
-        const crossPieceLengthTotal = holeDist * diagFactor - ringDiam
-        const crossPieceLength = crossPieceLengthTotal / 2 + + interfaceThickness
+        const crossPieceLengthTotal = holeDist * diagFactor - ringDiam - midPieceLength
+        const crossPieceLength = crossPieceLengthTotal / 2 + (interfaceThickness * 2)
         const ringConnectorLength = holeDist - ringDiam + interfaceThickness
 
         const xEdgeLength = width - (midPieceLength * 2) + interfaceThickness
@@ -564,7 +565,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             rotate([0, 0, TAU * 0.75], crossArmBaseAdj),
         )
 
-        const mainModel = crossPieceAssembly
+        const mainModel = rotate([0, 0, TAU / 8], crossPieceAssembly)
         const modelParts = {
             mainModel,
         }
@@ -684,7 +685,75 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
 
-        const mainModel = cuboid()
+        const {
+            size,
+            width,
+            depth,
+            height,
+            holeDiam,
+            holeDist,
+            connectorWidth,
+            ringDiam,
+            crossPieceLength,
+            midPieceLength,
+            ringConnectorLength,
+            xEdgeLength,
+            yEdgeLength,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.dims
+
+        // Determine hole points and various connection points
+        const connectionPtExt = math.inchesToMm(0.75)
+        const crossPointSize = [width + connectionPtExt, depth + connectionPtExt]
+
+        const baseRing = pegboardRing(opts)[0]
+        const baseLongPiece = pegboardLongPiece(opts)[0]
+        const baseCrossPiece = pegboardCrossPiece(opts)[0]
+
+        const holePts = geometry.getSquarePtsInArea(width - interfaceThickness, depth - interfaceThickness, holeDist)
+        const rings = holePts.map((holePt) => {
+            const currentPt = [holePt.x, holePt.y, 0]
+            return translate(currentPt, baseRing)
+        })
+
+        const crossPtsRaw = geometry.getSquarePtsInArea(crossPointSize[0], crossPointSize[1], holeDist)
+        const crossPts = crossPtsRaw.map(cPtRaw => [cPtRaw.x, cPtRaw.y, 0])
+        const crosses = crossPts.map((crossPt) => {
+            return translate(crossPt, baseCrossPiece)
+        })
+
+        const longPtsX = crossPtsRaw.map(cPtRaw => [cPtRaw.x, cPtRaw.y + (holeDist / 2), 0])
+        const longPiecesX = longPtsX.map((longPtX) => {
+            return translate(longPtX, baseLongPiece)
+        })
+        const longPtsY = crossPtsRaw.map(cPtRaw => [cPtRaw.x + (holeDist / 2), cPtRaw.y, 0])
+        const longPiecesY = longPtsY.map((longPtX) => {
+            return translate(longPtX, rotate([0, 0, TAU / 4], baseLongPiece))
+        })
+
+        const mainAssemblyBase = union(
+            ...rings,
+            ...crosses,
+            longPiecesX,
+            longPiecesY,
+        )
+        const mainAssemblyKeepBox = cuboid({
+            size: [
+                xEdgeLength,
+                yEdgeLength,
+                height * 2
+            ]
+        })
+        const mainAssembly = intersect(mainAssemblyBase, mainAssemblyKeepBox)
+
+        const edges = pegboardEdges(opts)[0]
+
+        const mainModel = union(
+            mainAssembly,
+            edges,
+        )
+
         const modelParts = {
             mainModel,
         }

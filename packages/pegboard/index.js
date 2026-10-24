@@ -89,6 +89,10 @@ const pegboardEdges = pegboard.pegboardEdges({
     size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
 })[0]
 
+const pegboardModel = pegboard.pegboard({
+    size: [inchesToMm(7), inchesToMm(4), inchesToMm(3 / 16)]
+})[0]
+
 
 
 //==============================================================================
@@ -103,13 +107,15 @@ const pegboardEdges = pegboard.pegboardEdges({
 function main() {
     const spaceUnit = inchesToMm(3.5)
 
-    return [
-        translate([spaceUnit * 0, spaceUnit * 0, spaceUnit * 0], pegboardRing),
-        translate([spaceUnit * 1, spaceUnit * 0, spaceUnit * 0], pegboardMidPiece),
-        translate([spaceUnit * 2, spaceUnit * 0, spaceUnit * 0], pegboardLongPiece),
-        translate([spaceUnit * 3, spaceUnit * 0, spaceUnit * 0], pegboardCrossPiece),
-        translate([spaceUnit * 4, spaceUnit * 0, spaceUnit * 0], pegboardEdges),
-    ]
+    // return [
+    //     translate([spaceUnit * 0, spaceUnit * 0, spaceUnit * 0], pegboardRing),
+    //     translate([spaceUnit * 1, spaceUnit * 0, spaceUnit * 0], pegboardMidPiece),
+    //     translate([spaceUnit * 2, spaceUnit * 0, spaceUnit * 0], pegboardLongPiece),
+    //     translate([spaceUnit * 3, spaceUnit * 0, spaceUnit * 0], pegboardCrossPiece),
+    //     translate([spaceUnit * 4, spaceUnit * 0, spaceUnit * 0], pegboardEdges),
+    // ]
+
+    return pegboardModel
 }
 
 
