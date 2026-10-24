@@ -90,7 +90,7 @@ const pegboardEdges = pegboard.pegboardEdges({
 })[0]
 
 const pegboardModel = pegboard.pegboard({
-    size: [inchesToMm(7), inchesToMm(4), inchesToMm(3 / 16)]
+    size: [inchesToMm(7), inchesToMm(4), inchesToMm(1 / 8)]
 })[0]
 
 
