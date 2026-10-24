@@ -1,6 +1,6 @@
 {
   "name": "arca-organizers",
-  "version": "0.1.1-alpha.0",
+  "version": "0.1.1",
   "description": "SW's Code-CAD tools for creating models of tools and utilities for organizing spaces.",
   "workspaces": [
     "packages/*"
