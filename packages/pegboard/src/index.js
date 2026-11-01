@@ -47,6 +47,21 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      */
     const pegboardDefaults = () => {
         /** Specific value declarations */
+        const modelTypes = {
+            light: {
+                id: 'light',
+                description: 'Pegboard w/ light reinforcements',
+            },
+            medium: {
+                id: 'medium',
+                description: 'Pegboard w/ medium reinforcements',
+            },
+            heavy: {
+                id: 'heavy',
+                description: 'Pegboard w/ heavy reinforcements',
+            },
+        }
+
         const defaultValues = {
             dims: {
                 size: [
@@ -64,8 +79,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
                 centrePt: [0, 0, 0]
             },
             types: {
-                default: standards.types.TYPE_DEFAULT,
-                alt: standards.types.TYPE_ALT,
+                default: modelTypes.medium,
+                ...modelTypes,
             },
         }
 
@@ -293,32 +308,110 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         })[0]
     }
 
-    const ringReinforcementBase = (holeDiam, ringThickness, baseThickness) => {
-        return null
+    const ringReinforcementBase = (holeDiam, ringThickness, baseThickness, fitGap = standards.FIT_GAP) => {
+        const ringBlankRadius = holeDiam + ringThickness
+        const ringHoleCutRadius = holeDiam / 2 + (fitGap / 2)
+
+        const ringBlank = cylinder({
+            height: baseThickness,
+            radius: ringBlankRadius
+        })
+        const ringCutCylinder = cylinder({
+            height: baseThickness * 2,
+            radius: ringHoleCutRadius
+        })
+
+        return subtract(ringBlank, ringCutCylinder)
     }
 
-    const ringReinforcementInnerEdge = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        return null
+    const ringReinforcementInnerEdge = (holeDiam, ringThickness, reinfThickness, reinfHeight, fitGap = standards.FIT_GAP) => {
+        const ringBlankInRadius = holeDiam + reinfThickness
+        const ringHoleCutInRadius = holeDiam / 2 + (fitGap / 2)
+
+        const ringReinfInBlank = cylinder({
+            height: reinfHeight,
+            radius: ringBlankInRadius
+        })
+        const ringReinfInCutCylinder = cylinder({
+            height: reinfHeight * 2,
+            radius: ringHoleCutInRadius
+        })
+
+        return subtract(ringReinfInBlank, ringReinfInCutCylinder)
     }
 
     const ringReinforcementOuterEdge = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        return null
+        const ringBlankOutRadius = holeDiam + ringThickness
+        const ringHoleCutOutRadius = ringBlankOutRadius - reinfThickness
+
+        const ringReinfOutBlank = cylinder({
+            height: reinfHeight,
+            radius: ringBlankOutRadius
+        })
+        const ringReinfOutCutCylinder = cylinder({
+            height: reinfHeight * 2,
+            radius: ringHoleCutOutRadius
+        })
+
+        return subtract(ringReinfOutBlank, ringReinfOutCutCylinder)
     }
 
-    const ringReinforcementSpokes = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        return null
+    const ringReinforcementSpokes = (holeDiam, ringThickness, reinfThickness, reinfHeight, fitGap = standards.FIT_GAP) => {
+        const ringBlankRadius = holeDiam + ringThickness
+        const ringHoleCutInRadius = holeDiam / 2 + (fitGap / 2)
+
+        const spokeReinforcementBase = cuboid({
+            size: [reinfThickness, ringBlankRadius - reinfThickness, reinfHeight]
+        })
+        const spokeReinforcements = union(
+            spokeReinforcementBase,
+            rotate([0, 0, TAU / 8], spokeReinforcementBase),
+            rotate([0, 0, TAU / 4], spokeReinforcementBase),
+            rotate([0, 0, TAU * .375], spokeReinforcementBase),
+        )
+
+        const ringReinfInCutCylinder = cylinder({
+            height: reinfHeight * 2,
+            radius: ringHoleCutInRadius
+        })
+
+        return subtract(spokeReinforcements, ringReinfInCutCylinder)
     }
 
     const lightRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        return null
+        const ringReinfBase = ringReinforcementBase(holeDiam, ringThickness, 1.333)
+        const ringReinfInnerEdge = ringReinforcementInnerEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
+
+        return union(
+            ringReinfBase,
+            ringReinfInnerEdge,
+        )
     }
 
     const mediumRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        return null
+        const ringReinfBase = ringReinforcementBase(holeDiam, ringThickness, 1.333)
+        const ringReinfInnerEdge = ringReinforcementInnerEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
+        const ringReinfSpokes = ringReinforcementSpokes(holeDiam, ringThickness, reinfThickness, reinfHeight)
+
+        return union(
+            ringReinfBase,
+            ringReinfInnerEdge,
+            ringReinfSpokes,
+        )
     }
 
     const heavyRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        return null
+        const ringReinfBase = ringReinforcementBase(holeDiam, ringThickness, 1.333)
+        const ringReinfInnerEdge = ringReinforcementInnerEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
+        const ringReinfSpokes = ringReinforcementSpokes(holeDiam, ringThickness, reinfThickness, reinfHeight)
+        const ringReinfOuterEdge = ringReinforcementOuterEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
+
+        return union(
+            ringReinfBase,
+            ringReinfInnerEdge,
+            ringReinfSpokes,
+            ringReinfOuterEdge,
+        )
     }
 
     const heavyReinforcementLengthUnit = (opts) => {
