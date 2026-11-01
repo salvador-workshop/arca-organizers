@@ -270,7 +270,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     * MODELLING FUNCTIONS
     * ------------------------------------- */
 
-    const reinforcedUnit = (opts) => {
+    const heavyReinforcementLengthUnit = (opts) => {
         const { size, baseThickness, reinfThickness } = opts
 
         // Generate flat base
@@ -292,11 +292,11 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         return position.ctr(reinfUnitAssembly)
     }
 
-    const reinforcedEdgeUnit = (opts) => {
+    const heavyReinforcementLength = (opts) => {
         const { size, unitLength, baseThickness, reinfThickness } = opts
         const numUnits = Math.ceil(size[0] / unitLength) + 1
 
-        const reinfEdgeUnitBase = reinforcedUnit({
+        const reinfEdgeUnitBase = heavyReinforcementLengthUnit({
             size: [unitLength, size[1], size[2]],
             baseThickness,
             reinfThickness,
@@ -330,7 +330,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         return position.ctr(reinfEdgePiece)
     }
 
-    const lightReinforcedUnit = (opts) => {
+    const lightReinforcedLengthUnit = (opts) => {
         const { size, baseThickness, reinfThickness } = opts
 
         // Generate flat base
@@ -440,7 +440,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             lightInterfaceThickness,
         } = modelProperties.dims
 
-        const mainModel = reinforcedUnit({
+        const mainModel = heavyReinforcementLengthUnit({
             size: [midPieceLength, midPieceLength, height],
             baseThickness: interfaceThickness,
             reinfThickness: lightInterfaceThickness
@@ -471,7 +471,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             lightInterfaceThickness,
         } = modelProperties.dims
 
-        const mainModel = lightReinforcedUnit({
+        const mainModel = lightReinforcedLengthUnit({
             size: [ringConnectorLength, lightConnectorWidth, height],
             baseThickness: interfaceThickness,
             reinfThickness: lightInterfaceThickness
@@ -502,7 +502,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             lightInterfaceThickness,
         } = modelProperties.dims
 
-        const crossArmBase = lightReinforcedUnit({
+        const crossArmBase = lightReinforcedLengthUnit({
             size: [crossPieceLengthTotal + interfaceThickness, lightConnectorWidth, height],
             baseThickness: interfaceThickness,
             reinfThickness: lightInterfaceThickness
@@ -547,7 +547,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
 
         // Generate sub-sections
         const cornerPieceBase = pegboardMidPiece(initOpts)[0]
-        const xEdgeLengthBase = reinforcedEdgeUnit({
+        const xEdgeLengthBase = heavyReinforcementLength({
             size: [xEdgeLength, connectorWidth, height],
             unitLength: holeDist,
             baseThickness: interfaceThickness,
@@ -555,7 +555,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         })
         const yEdgeLengthBase = rotate(
             [0, 0, TAU / 4],
-            reinforcedEdgeUnit({
+            heavyReinforcementLength({
                 size: [yEdgeLength, connectorWidth, height],
                 unitLength: holeDist,
                 baseThickness: interfaceThickness,
