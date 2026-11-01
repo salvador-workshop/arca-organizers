@@ -270,18 +270,69 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     * MODELLING FUNCTIONS
     * ------------------------------------- */
 
+    const reinforcementUnitBase = (length, width, baseThickness) => {
+        return cuboid({ size: [length, width, baseThickness] })
+    }
+
+    const lightLengthReinforcement = (length, reinfThickness, spineHeight) => {
+        const spine = cuboid({ size: [length, reinfThickness, spineHeight] })
+        const endPieces = null
+
+        return spine
+    }
+
+    const mediumLengthReinforcement = (length, width, reinfThickness, spineHeight) => {
+        return null
+    }
+
+    const heavyLengthReinforcement = (length, width, thickness, reinfThickness) => {
+        return reinforcedRectPanel({
+            size: [length, width, thickness],
+            reinforcementPattern: 'x',
+            reinforcementThickness: [reinfThickness, reinfThickness, reinfThickness]
+        })[0]
+    }
+
+    const ringReinforcementBase = (holeDiam, ringThickness, baseThickness) => {
+        return null
+    }
+
+    const ringReinforcementInnerEdge = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
+        return null
+    }
+
+    const ringReinforcementOuterEdge = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
+        return null
+    }
+
+    const ringReinforcementSpokes = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
+        return null
+    }
+
+    const lightRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
+        return null
+    }
+
+    const mediumRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
+        return null
+    }
+
+    const heavyRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
+        return null
+    }
+
     const heavyReinforcementLengthUnit = (opts) => {
         const { size, baseThickness, reinfThickness } = opts
 
         // Generate flat base
-        const reinfUnitBase = cuboid({ size: [size[0], size[1], baseThickness] })
+        const reinfUnitBase = reinforcementUnitBase(size[0], size[1], baseThickness)
 
-        // Generate reinforcement
-        const reinfUnitReinforcement = reinforcedRectPanel({
-            size,
-            reinforcementPattern: 'x',
-            reinforcementThickness: [reinfThickness, reinfThickness, reinfThickness]
-        })[0]
+        const reinfUnitReinforcement = heavyLengthReinforcement(
+            size[0],
+            size[1],
+            size[2],
+            reinfThickness,
+        )
 
         // Combine all pieces
         const reinfUnitAssembly = union(
@@ -334,10 +385,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const { size, baseThickness, reinfThickness } = opts
 
         // Generate flat base
-        const lightReinfUnitBase = cuboid({ size: [size[0], size[1], baseThickness] })
+        const lightReinfUnitBase = reinforcementUnitBase(size[0], size[1], baseThickness)
 
         // Generate reinforcement
-        const lightReinfUnitReinforcement = cuboid({ size: [size[0], reinfThickness, size[2]] })
+        const lightReinfUnitReinforcement = lightLengthReinforcement(size[0], reinfThickness, size[2])
 
         // Combine all pieces
         const lightReinfUnitAssembly = union(
