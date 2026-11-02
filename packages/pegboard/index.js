@@ -69,28 +69,25 @@ const inchesToMm = (numIn) => numIn * 25.4
  * Test subjects
  * ------------------------------------- */
 
-const pegboardRing = pegboard.pegboardRing({
-    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+const pegboardSizeDemo = [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 8)]
+
+const pegboardModelDefault = pegboard.pegboard({
+    size: pegboardSizeDemo,
 })[0]
 
-const pegboardMidPiece = pegboard.pegboardMidPiece({
-    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+const pegboardModelLight = pegboard.pegboard({
+    size: pegboardSizeDemo,
+    type: 'light'
 })[0]
 
-const pegboardLongPiece = pegboard.pegboardLongPiece({
-    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
+const pegboardModelMedium = pegboard.pegboard({
+    size: pegboardSizeDemo,
+    type: 'medium'
 })[0]
 
-const pegboardCrossPiece = pegboard.pegboardCrossPiece({
-    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
-})[0]
-
-const pegboardEdges = pegboard.pegboardEdges({
-    size: [inchesToMm(4), inchesToMm(4), inchesToMm(1 / 4)]
-})[0]
-
-const pegboardModel = pegboard.pegboard({
-    size: [inchesToMm(7), inchesToMm(4), inchesToMm(1 / 8)]
+const pegboardModelHeavy = pegboard.pegboard({
+    size: pegboardSizeDemo,
+    type: 'heavy'
 })[0]
 
 
@@ -105,17 +102,14 @@ const pegboardModel = pegboard.pegboard({
  * @returns `geom3` or `geom3[]`
  */
 function main() {
-    const spaceUnit = inchesToMm(3.5)
+    const spaceUnit = inchesToMm(5)
 
-    // return [
-    //     translate([spaceUnit * 0, spaceUnit * 0, spaceUnit * 0], pegboardRing),
-    //     translate([spaceUnit * 1, spaceUnit * 0, spaceUnit * 0], pegboardMidPiece),
-    //     translate([spaceUnit * 2, spaceUnit * 0, spaceUnit * 0], pegboardLongPiece),
-    //     translate([spaceUnit * 3, spaceUnit * 0, spaceUnit * 0], pegboardCrossPiece),
-    //     translate([spaceUnit * 4, spaceUnit * 0, spaceUnit * 0], pegboardEdges),
-    // ]
-
-    return pegboardModel
+    return [
+        translate([spaceUnit * 0, spaceUnit * 0, spaceUnit * 0], pegboardModelDefault),
+        translate([spaceUnit * 1, spaceUnit * 0, spaceUnit * 0], pegboardModelLight),
+        translate([spaceUnit * 2, spaceUnit * 0, spaceUnit * 0], pegboardModelMedium),
+        translate([spaceUnit * 3, spaceUnit * 0, spaceUnit * 0], pegboardModelHeavy),
+    ]
 }
 
 

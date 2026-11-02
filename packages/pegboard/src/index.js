@@ -31,7 +31,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     } = swcadJs.calcs
 
     const {
-        reinforcedRectPanel,
+        reinforcements,
     } = swcadJs.components
 
 
@@ -71,6 +71,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
                 ],
                 holeDiam: math.inchesToMm(1 / 4),
                 holeDist: math.inchesToMm(1),
+                ringThickness: math.inchesToMm(3 / 16),
                 connectorWidth: math.inchesToMm(7 / 32),
                 lightConnectorWidth: math.inchesToMm(5 / 32),
                 lightInterfaceThickness: 1.125,
@@ -98,6 +99,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size: defaultValues.dims.size,
             holeDiam: defaultValues.dims.holeDiam,
             holeDist: defaultValues.dims.holeDist,
+            ringThickness: defaultValues.dims.ringThickness,
             connectorWidth: defaultValues.dims.connectorWidth,
             lightConnectorWidth: defaultValues.dims.lightConnectorWidth,
             lightInterfaceThickness: defaultValues.dims.lightInterfaceThickness,
@@ -129,6 +131,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size = defaults.opts.size,
             holeDiam = defaults.opts.holeDiam,
             holeDist = defaults.opts.holeDist,
+            ringThickness = defaults.opts.ringThickness,
             connectorWidth = defaults.opts.connectorWidth,
             lightConnectorWidth = defaults.opts.lightConnectorWidth,
             type = defaults.opts.type,
@@ -148,6 +151,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size,
             holeDiam,
             holeDist,
+            ringThickness,
             connectorWidth,
             lightConnectorWidth,
             ...stdOpts,
@@ -177,6 +181,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             size,
             holeDiam,
             holeDist,
+            ringThickness,
             connectorWidth,
             lightConnectorWidth,
             type,
@@ -196,7 +201,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const depth = size[1]
         const height = size[2]
 
-        const ringDiam = holeDiam * 2.5
+        const ringDiam = holeDiam + (ringThickness * 2)
 
         const midPieceLength = connectorWidth
         const crossPieceLengthTotal = holeDist * diagFactor - ringDiam
@@ -228,6 +233,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             height,
             holeDiam,
             holeDist,
+            ringThickness,
             connectorWidth,
             lightConnectorWidth,
             ringDiam,
@@ -301,7 +307,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     const heavyLengthReinforcement = (length, width, thickness, reinfThickness) => {
-        return reinforcedRectPanel({
+        return reinforcements.reinforcedRectPanel({
             size: [length, width, thickness],
             reinforcementPattern: 'x',
             reinforcementThickness: [reinfThickness, reinfThickness, reinfThickness]
@@ -309,7 +315,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     const ringReinforcementBase = (holeDiam, ringThickness, baseThickness, fitGap = standards.FIT_GAP) => {
-        const ringBlankRadius = holeDiam + ringThickness
+        const ringBlankRadius = holeDiam / 2 + ringThickness
         const ringHoleCutRadius = holeDiam / 2 + (fitGap / 2)
 
         const ringBlank = cylinder({
@@ -325,7 +331,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     const ringReinforcementInnerEdge = (holeDiam, ringThickness, reinfThickness, reinfHeight, fitGap = standards.FIT_GAP) => {
-        const ringBlankInRadius = holeDiam + reinfThickness
+        const ringBlankInRadius = holeDiam / 2 + reinfThickness
         const ringHoleCutInRadius = holeDiam / 2 + (fitGap / 2)
 
         const ringReinfInBlank = cylinder({
@@ -341,7 +347,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     const ringReinforcementOuterEdge = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        const ringBlankOutRadius = holeDiam + ringThickness
+        const ringBlankOutRadius = holeDiam / 2 + ringThickness
         const ringHoleCutOutRadius = ringBlankOutRadius - reinfThickness
 
         const ringReinfOutBlank = cylinder({
@@ -357,7 +363,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     const ringReinforcementSpokes = (holeDiam, ringThickness, reinfThickness, reinfHeight, fitGap = standards.FIT_GAP) => {
-        const ringBlankRadius = holeDiam + ringThickness
+        const ringBlankRadius = holeDiam + (ringThickness * 2)
         const ringHoleCutInRadius = holeDiam / 2 + (fitGap / 2)
 
         const spokeReinforcementBase = cuboid({
@@ -376,42 +382,6 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         })
 
         return subtract(spokeReinforcements, ringReinfInCutCylinder)
-    }
-
-    const lightRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        const ringReinfBase = ringReinforcementBase(holeDiam, ringThickness, 1.333)
-        const ringReinfInnerEdge = ringReinforcementInnerEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
-
-        return union(
-            ringReinfBase,
-            ringReinfInnerEdge,
-        )
-    }
-
-    const mediumRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        const ringReinfBase = ringReinforcementBase(holeDiam, ringThickness, 1.333)
-        const ringReinfInnerEdge = ringReinforcementInnerEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
-        const ringReinfSpokes = ringReinforcementSpokes(holeDiam, ringThickness, reinfThickness, reinfHeight)
-
-        return union(
-            ringReinfBase,
-            ringReinfInnerEdge,
-            ringReinfSpokes,
-        )
-    }
-
-    const heavyRingReinforcement = (holeDiam, ringThickness, reinfThickness, reinfHeight) => {
-        const ringReinfBase = ringReinforcementBase(holeDiam, ringThickness, 1.333)
-        const ringReinfInnerEdge = ringReinforcementInnerEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
-        const ringReinfSpokes = ringReinforcementSpokes(holeDiam, ringThickness, reinfThickness, reinfHeight)
-        const ringReinfOuterEdge = ringReinforcementOuterEdge(holeDiam, ringThickness, reinfThickness, reinfHeight)
-
-        return union(
-            ringReinfBase,
-            ringReinfInnerEdge,
-            ringReinfSpokes,
-            ringReinfOuterEdge,
-        )
     }
 
     const heavyReinforcementLengthUnit = (opts) => {
@@ -504,59 +474,39 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const modelProperties = pegboardProps(initOpts)
 
         const {
+            type,
+        } = modelProperties.opts
+
+        const {
             height,
             holeDiam,
+            ringThickness,
             ringDiam,
             interfaceThickness,
         } = modelProperties.dims
 
-        // Generate flat circular base
-        const ringBase = cylinder({
-            height: interfaceThickness,
-            radius: ringDiam / 2
-        })
+        const ringReinfBase = ringReinforcementBase(holeDiam, ringThickness, 1.333)
+        const ringReinfInnerEdge = ringReinforcementInnerEdge(holeDiam, ringThickness, interfaceThickness, height)
+        const ringReinfSpokes = ringReinforcementSpokes(holeDiam, ringThickness, interfaceThickness, height)
+        const ringReinfOuterEdge = ringReinforcementOuterEdge(holeDiam, ringThickness, interfaceThickness, height)
 
-        // Generate vertical reinforcements
-        const extReinforcementBase = cylinder({
-            height,
-            radius: ringDiam / 2
-        })
-        const extReinforcementCutaway = cylinder({
-            height: height * 1.5,
-            radius: ringDiam / 2 - interfaceThickness
-        })
-        const extReinforcement = subtract(
-            extReinforcementBase,
-            extReinforcementCutaway
-        )
-        const intReinforcement = cylinder({
-            height: height,
-            radius: holeDiam / 2 + interfaceThickness
-        })
+        const assemblyParts = [
+            position.ctrMin(ringReinfBase),
+            position.ctrMin(ringReinfInnerEdge),
+        ]
 
-        const spokeReinforcementBase = cuboid({ size: [interfaceThickness, ringDiam - interfaceThickness, height] })
-        const spokeReinforcements = union(
-            spokeReinforcementBase,
-            rotate([0, 0, TAU / 8], spokeReinforcementBase),
-            rotate([0, 0, TAU / 4], spokeReinforcementBase),
-            rotate([0, 0, TAU * .375], spokeReinforcementBase),
-        )
+        if (type == 'medium') {
+            assemblyParts.push([
+                position.ctrMin(ringReinfSpokes),
+            ])
+        } else if (type == 'heavy') {
+            assemblyParts.push([
+                position.ctrMin(ringReinfSpokes),
+                position.ctrMin(ringReinfOuterEdge),
+            ])
+        }
 
-        // Combine all pieces and punch through ring assembly
-        const ringAssemblyBase = union(
-            position.ctrMin(ringBase),
-            position.ctrMin(extReinforcement),
-            position.ctrMin(intReinforcement),
-            position.ctrMin(spokeReinforcements),
-        )
-        const ringPunch = cylinder({
-            height: height * 3,
-            radius: holeDiam / 2
-        })
-        const ringAssembly = subtract(
-            ringAssemblyBase,
-            ringPunch
-        )
+        const ringAssembly = union(...assemblyParts)
 
         const mainModel = position.ctr(ringAssembly)
         const modelParts = {
@@ -572,7 +522,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
      * @memberof newModelParent
      */
-    const pegboardMidPiece = (opts) => {
+    const pegboardCornerPiece = (opts) => {
         const defaults = pegboardDefaults()
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
@@ -597,12 +547,12 @@ const pegboardInit = ({ jscad, swcadJs }) => {
     }
 
     /**
-     * Generates long piece, which connects pegboard rings
+     * Generates long piece, which connects pegboard rings along the grid axes
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
      * @memberof newModelParent
      */
-    const pegboardLongPiece = (opts) => {
+    const pegboardGridPiece = (opts) => {
         const defaults = pegboardDefaults()
         const initOpts = pegboardOpts(opts)
         const modelProperties = pegboardProps(initOpts)
@@ -639,6 +589,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const modelProperties = pegboardProps(initOpts)
 
         const {
+            type,
+        } = modelProperties.opts
+
+        const {
             height,
             lightConnectorWidth,
             crossPieceLengthTotal,
@@ -646,11 +600,16 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             lightInterfaceThickness,
         } = modelProperties.dims
 
-        const crossArmBase = lightReinforcedLengthUnit({
-            size: [crossPieceLengthTotal + interfaceThickness, lightConnectorWidth, height],
-            baseThickness: interfaceThickness,
-            reinfThickness: lightInterfaceThickness
-        })
+        let crossArmBase = null
+        if (type == 'light') {
+            crossArmBase = reinforcementUnitBase(crossPieceLengthTotal + interfaceThickness, lightConnectorWidth, interfaceThickness)
+        } else {
+            crossArmBase = lightReinforcedLengthUnit({
+                size: [crossPieceLengthTotal + interfaceThickness, lightConnectorWidth, height],
+                baseThickness: interfaceThickness,
+                reinfThickness: lightInterfaceThickness
+            })
+        }
 
         // Combine all pieces
         const crossPieceAssembly = union(
@@ -690,7 +649,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         } = modelProperties.dims
 
         // Generate sub-sections
-        const cornerPieceBase = pegboardMidPiece(initOpts)[0]
+        const cornerPieceBase = pegboardCornerPiece(initOpts)[0]
         const xEdgeLengthBase = heavyReinforcementLength({
             size: [xEdgeLength, connectorWidth, height],
             unitLength: holeDist,
@@ -774,6 +733,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const modelProperties = pegboardProps(initOpts)
 
         const {
+            type,
+        } = modelProperties.opts
+
+        const {
             width,
             depth,
             height,
@@ -787,9 +750,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         const connectionPtExt = holeDist * 0.75
         const crossPointSize = [width + connectionPtExt, depth + connectionPtExt]
 
-        const baseRing = pegboardRing(opts)[0]
-        const baseLongPiece = pegboardLongPiece(opts)[0]
-        const baseCrossPiece = pegboardCrossPiece(opts)[0]
+        const baseRing = position.ctrMin(pegboardRing(opts)[0])
+        const baseCrossPiece = position.ctrMin(pegboardCrossPiece(opts)[0])
 
         const holePts = geometry.getSquarePtsInArea(width - interfaceThickness, depth - interfaceThickness, holeDist)
         const rings = holePts.map((holePt) => {
@@ -803,21 +765,33 @@ const pegboardInit = ({ jscad, swcadJs }) => {
             return translate(crossPt, baseCrossPiece)
         })
 
-        const longPtsX = crossPtsRaw.map(cPtRaw => [cPtRaw.x, cPtRaw.y + (holeDist / 2), 0])
-        const longPiecesX = longPtsX.map((longPtX) => {
-            return translate(longPtX, baseLongPiece)
-        })
-        const longPtsY = crossPtsRaw.map(cPtRaw => [cPtRaw.x + (holeDist / 2), cPtRaw.y, 0])
-        const longPiecesY = longPtsY.map((longPtX) => {
-            return translate(longPtX, rotate([0, 0, TAU / 4], baseLongPiece))
-        })
-
-        const mainAssemblyBase = union(
+        const assemblyParts = [
             ...rings,
             ...crosses,
-            longPiecesX,
-            longPiecesY,
+        ]
+
+        if (type == 'heavy') {
+            const baseGridPiece = position.ctrMin(pegboardGridPiece(opts)[0])
+
+            const gridPtsX = crossPtsRaw.map(cPtRaw => [cPtRaw.x, cPtRaw.y + (holeDist / 2), 0])
+            const gridPiecesX = gridPtsX.map((longPtX) => {
+                return translate(longPtX, baseGridPiece)
+            })
+            const gridPtsY = crossPtsRaw.map(cPtRaw => [cPtRaw.x + (holeDist / 2), cPtRaw.y, 0])
+            const gridPiecesY = gridPtsY.map((longPtX) => {
+                return translate(longPtX, rotate([0, 0, TAU / 4], baseGridPiece))
+            })
+
+            assemblyParts.push(
+                gridPiecesX,
+                gridPiecesY,
+            )
+        }
+
+        const mainAssemblyBase = union(
+            ...assemblyParts
         )
+
         const mainAssemblyKeepBox = cuboid({
             size: [
                 xEdgeLength,
@@ -827,7 +801,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         })
         const mainAssembly = intersect(mainAssemblyBase, mainAssemblyKeepBox)
 
-        const edges = pegboardEdges(opts)[0]
+        const edges = position.ctrMin(pegboardEdges(opts)[0])
 
         const mainModel = union(
             mainAssembly,
@@ -845,8 +819,8 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         defaults: pegboardDefaults,
         props: pegboardProps,
         pegboardRing,
-        pegboardMidPiece,
-        pegboardLongPiece,
+        pegboardCornerPiece,
+        pegboardGridPiece,
         pegboardCrossPiece,
         pegboardEdges,
         pegboard,
