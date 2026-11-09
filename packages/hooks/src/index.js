@@ -2,54 +2,31 @@
 
 const hooksInit = ({ jscad, swcadJs }) => {
     const {
-        cube,
         cylinder,
-        sphere,
-        cylinderElliptic,
-        circle,
         cuboid,
-        roundedCuboid,
-        roundedCylinder,
         roundedRectangle,
-        rectangle,
-        triangle,
     } = jscad.primitives
 
     const {
         align,
         translate,
         rotate,
-        mirror
     } = jscad.transforms
 
     const {
-        intersect,
         subtract,
         union,
-        scission
     } = jscad.booleans
 
     const {
         extrudeLinear,
-        extrudeRotate,
-        project
     } = jscad.extrusions
 
     const {
         measureDimensions,
-        measureBoundingBox,
-        measureVolume
     } = jscad.measurements
 
-    const {
-        hull,
-        hullChain
-    } = jscad.hulls
-
-    const { vectorText } = jscad.text
-    const { toOutlines } = jscad.geometries.geom2
     const { TAU } = jscad.maths.constants
-    const { colorize } = jscad.colors
 
     const {
         standards,
@@ -57,7 +34,6 @@ const hooksInit = ({ jscad, swcadJs }) => {
     } = swcadJs.data
 
     const {
-        math,
         position,
     } = swcadJs.calcs
 
@@ -134,7 +110,6 @@ const hooksInit = ({ jscad, swcadJs }) => {
      */
     const hooksOpts = (opts) => {
         const defaults = hooksDefaults()
-        console.log('hooksOpts() -- opts', opts)
 
         // User options
         const {
@@ -144,8 +119,6 @@ const hooksInit = ({ jscad, swcadJs }) => {
         const initOpts = {
             type,
         }
-
-        console.log('hooksOpts() -- initOpts', initOpts)
 
         return initOpts
     }
@@ -163,22 +136,16 @@ const hooksInit = ({ jscad, swcadJs }) => {
      */
     const hooksProps = (opts) => {
         const defaults = hooksDefaults()
-        console.log('hooksProps() -- opts', opts)
 
         const dimConstants = defaults.vals.constants
 
         const {
-            screwHoleRadius,
-            baseplateCornerRadius,
             baseplateSizeMedium,
             hookDepthMedium,
             hookWidthMedium,
             baseplateSizeLarge,
             hookDepthLarge,
             hookWidthLarge,
-            straightHookAngle,
-            interfaceThickness,
-            fitGap,
         } = dimConstants
 
         const {
@@ -246,7 +213,6 @@ const hooksInit = ({ jscad, swcadJs }) => {
             components: modelComponents,
         }
 
-        console.log('hooksProps() -- modelProperties', modelProperties)
 
         return modelProperties
     }
@@ -336,30 +302,19 @@ const hooksInit = ({ jscad, swcadJs }) => {
  * New Model 2
  * @param {*} opts 
  * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
- * @memberof newModelParent
+ * @memberof hooks
  */
     const screwCutaways = (opts) => {
-        const defaults = hooksDefaults()
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
 
         const {
-            type
-        } = modelProperties.opts
-
-        const {
             screwHoleRadius,
-            baseplateCornerRadius,
-            straightHookAngle,
             interfaceThickness,
-            fitGap,
         } = modelProperties.constants
 
         const {
             baseplateSize,
-            hookDepth,
-            hookWidth,
-            straightHookLength,
         } = modelProperties.dims
 
         const cutawayBase = cylinder({
@@ -387,30 +342,19 @@ const hooksInit = ({ jscad, swcadJs }) => {
      * New Model 1
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof hooks
      */
     const hookBaseplate = (opts) => {
-        const defaults = hooksDefaults()
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
 
         const {
-            type
-        } = modelProperties.opts
-
-        const {
-            screwHoleRadius,
             baseplateCornerRadius,
-            straightHookAngle,
             interfaceThickness,
-            fitGap,
         } = modelProperties.constants
 
         const {
             baseplateSize,
-            hookDepth,
-            hookWidth,
-            straightHookLength,
         } = modelProperties.dims
 
         const baseplateProfile = roundedRectangle({
@@ -437,10 +381,9 @@ const hooksInit = ({ jscad, swcadJs }) => {
      * ...
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof hooks
      */
     const straightHook = (opts) => {
-        const defaults = hooksDefaults()
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
 
@@ -449,23 +392,18 @@ const hooksInit = ({ jscad, swcadJs }) => {
         } = modelProperties.opts
 
         const {
-            screwHoleRadius,
-            baseplateCornerRadius,
             straightHookAngle,
             hookReinforcementWidthMedium,
             hookReinforcementWidthLarge,
             interfaceThickness,
-            fitGap,
         } = modelProperties.constants
 
         const {
-            baseplateSize,
             hookDepth,
             hookWidth,
             straightHookLength,
         } = modelProperties.dims
 
-        console.log(type, straightHookLength, hookWidth)
         let hookBase = null
         if (type == 'large') {
             hookBase = mediumReinforcedLengthUnit({
@@ -504,37 +442,16 @@ const hooksInit = ({ jscad, swcadJs }) => {
      * ...
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof hooks
      */
     const utilityHook = (opts) => {
-        const defaults = hooksDefaults()
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
-
-        const {
-            type
-        } = modelProperties.opts
-
-        const {
-            screwHoleRadius,
-            baseplateCornerRadius,
-            straightHookAngle,
-            interfaceThickness,
-            fitGap,
-        } = modelProperties.constants
-
-        const {
-            baseplateSize,
-            hookDepth,
-            hookWidth,
-            straightHookLength,
-        } = modelProperties.dims
 
         const baseplate = hookBaseplate(opts)[0]
         const strHook = straightHook(opts)[0]
         const strHookDims = measureDimensions(strHook)
 
-        console.log(strHookDims)
 
         const strHookAdj = align({
             modes: position.alignModes.ctrMin,
@@ -554,6 +471,10 @@ const hooksInit = ({ jscad, swcadJs }) => {
         return [mainModel, modelParts, modelProperties]
     }
 
+    /**
+     * Functions modelling various hook/hanger organizers.
+     * @namespace hooks
+     */
     return {
         defaults: hooksDefaults,
         props: hooksProps,
