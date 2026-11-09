@@ -56,6 +56,10 @@ const { colorize } = jscad.colors
 
 const swcadJs = require('swcad-js').init({ jscad });
 
+const {
+    math,
+} = swcadJs.calcs
+
 const hooksModule = require('./src/index.js')
 const hooks = hooksModule.init({ jscad, swcadJs })
 
@@ -94,12 +98,12 @@ const lgModels = [
 ]
 
 const utilityHookRowMd = hooks.utilityHookRow({
-    rowSpacing: 50,
+    rowSpacing: math.inchesToMm(8 / 3),
     numHooks: 3,
 })[0]
 
 const utilityHookRowLg = hooks.utilityHookRow({
-    rowSpacing: 50,
+    rowSpacing: math.inchesToMm(8 / 3),
     numHooks: 3,
     type: 'large',
 })[0]
