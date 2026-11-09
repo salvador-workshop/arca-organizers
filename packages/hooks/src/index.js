@@ -94,11 +94,12 @@ const hooksInit = ({ jscad, swcadJs }) => {
                 baseplateSizeMedium: [16.2, 51.2],
                 hookDepthMedium: 22.2,
                 hookWidthMedium: 6.1,
+                hookReinforcementWidthMedium: standards.INTERFACE_THICKNESS * 3,
                 baseplateSizeLarge: [18.9, 73.8],
                 hookDepthLarge: 27.3,
                 hookWidthLarge: 11.9,
+                hookReinforcementWidthLarge: standards.INTERFACE_THICKNESS * 4,
                 straightHookAngle: TAU / 6,
-                straightHookReinforcementWidth: standards.INTERFACE_THICKNESS * 3,
                 interfaceThickness: standards.INTERFACE_THICKNESS,
                 fitGap: standards.FIT_GAP,
             }
@@ -274,8 +275,8 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         const spacing = width / 3
         const spines = [
-            translate([0, spacing / 2, 0], spine),
-            translate([0, spacing / -2, 0], spine),
+            translate([0, spacing / 2 + (reinfThickness / 2), 0], spine),
+            translate([0, spacing / -2 - (reinfThickness / 2), 0], spine),
         ]
 
         return union(spines)
@@ -332,6 +333,57 @@ const hooksInit = ({ jscad, swcadJs }) => {
     }
 
     /**
+ * New Model 2
+ * @param {*} opts 
+ * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
+ * @memberof newModelParent
+ */
+    const screwCutaways = (opts) => {
+        const defaults = hooksDefaults()
+        const initOpts = hooksOpts(opts)
+        const modelProperties = hooksProps(initOpts)
+
+        const {
+            type
+        } = modelProperties.opts
+
+        const {
+            screwHoleRadius,
+            baseplateCornerRadius,
+            straightHookAngle,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.constants
+
+        const {
+            baseplateSize,
+            hookDepth,
+            hookWidth,
+            straightHookLength,
+        } = modelProperties.dims
+
+        const cutawayBase = cylinder({
+            radius: screwHoleRadius,
+            height: interfaceThickness * 3
+        })
+
+        const endOffset = baseplateSize[0] / 2
+        const spacing = baseplateSize[1] - (endOffset * 2)
+
+        const cutaways = [
+            translate([0, spacing / 2, 0], cutawayBase),
+            translate([0, spacing / -2, 0], cutawayBase)
+        ]
+
+        const mainModel = cutaways
+        const modelParts = {
+            mainModel,
+        }
+
+        return [mainModel, modelParts, modelProperties]
+    }
+
+    /**
      * New Model 1
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
@@ -361,45 +413,19 @@ const hooksInit = ({ jscad, swcadJs }) => {
             straightHookLength,
         } = modelProperties.dims
 
-        const mainModel = cuboid()
-        const modelParts = {
-            mainModel,
-        }
+        const baseplateProfile = roundedRectangle({
+            size: baseplateSize,
+            roundRadius: baseplateCornerRadius
+        })
 
-        return [mainModel, modelParts, modelProperties]
-    }
+        const baseplateBlank = position.ctr(extrudeLinear(
+            { height: interfaceThickness },
+            baseplateProfile
+        ))
 
-    /**
-     * New Model 2
-     * @param {*} opts 
-     * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
-     */
-    const screwCutaways = (opts) => {
-        const defaults = hooksDefaults()
-        const initOpts = hooksOpts(opts)
-        const modelProperties = hooksProps(initOpts)
+        const cutaways = screwCutaways(opts)[0]
 
-        const {
-            type
-        } = modelProperties.opts
-
-        const {
-            screwHoleRadius,
-            baseplateCornerRadius,
-            straightHookAngle,
-            interfaceThickness,
-            fitGap,
-        } = modelProperties.constants
-
-        const {
-            baseplateSize,
-            hookDepth,
-            hookWidth,
-            straightHookLength,
-        } = modelProperties.dims
-
-        const mainModel = cuboid()
+        const mainModel = subtract(baseplateBlank, cutaways)
         const modelParts = {
             mainModel,
         }
@@ -426,7 +452,8 @@ const hooksInit = ({ jscad, swcadJs }) => {
             screwHoleRadius,
             baseplateCornerRadius,
             straightHookAngle,
-            straightHookReinforcementWidth,
+            hookReinforcementWidthMedium,
+            hookReinforcementWidthLarge,
             interfaceThickness,
             fitGap,
         } = modelProperties.constants
@@ -442,13 +469,13 @@ const hooksInit = ({ jscad, swcadJs }) => {
         let hookBase = null
         if (type == 'large') {
             hookBase = mediumReinforcedLengthUnit({
-                size: [straightHookLength, hookWidth, straightHookReinforcementWidth],
+                size: [straightHookLength, hookWidth, hookReinforcementWidthLarge],
                 baseThickness: interfaceThickness,
                 reinfThickness: interfaceThickness,
             })
         } else {
             hookBase = lightReinforcedLengthUnit({
-                size: [straightHookLength, hookWidth, straightHookReinforcementWidth],
+                size: [straightHookLength, hookWidth, hookReinforcementWidthMedium],
                 baseThickness: interfaceThickness,
                 reinfThickness: interfaceThickness,
             })
@@ -503,7 +530,23 @@ const hooksInit = ({ jscad, swcadJs }) => {
             straightHookLength,
         } = modelProperties.dims
 
-        const mainModel = cuboid()
+        const baseplate = hookBaseplate(opts)[0]
+        const strHook = straightHook(opts)[0]
+        const strHookDims = measureDimensions(strHook)
+
+        console.log(strHookDims)
+
+        const strHookAdj = align({
+            modes: position.alignModes.ctrMin,
+            // relativeTo: [0, 0, 0]
+        }, strHook)
+
+        const assembly = union(
+            baseplate,
+            strHookAdj,
+        )
+
+        const mainModel = assembly
         const modelParts = {
             mainModel,
         }
@@ -514,8 +557,8 @@ const hooksInit = ({ jscad, swcadJs }) => {
     return {
         defaults: hooksDefaults,
         props: hooksProps,
-        hookBaseplate,
         screwCutaways,
+        hookBaseplate,
         straightHook,
         utilityHook,
     }

@@ -109,7 +109,7 @@ function main() {
         return translate([idx * spaceUnit, 0, 0], oModelMd)
     })
     const outModelsLg = lgModels.map((oModelLg, idx) => {
-        return translate([idx * spaceUnit, spaceUnit, 0], oModelLg)
+        return translate([idx * spaceUnit, spaceUnit * 2, 0], oModelLg)
     })
 
     return [
