@@ -466,7 +466,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      * Generates pegboard ring (donut)
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof pegboard
      */
     const pegboardRing = (opts) => {
         const defaults = pegboardDefaults()
@@ -520,7 +520,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      * Generates mid piece, for where connecting pieces intersect
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof pegboard
      */
     const pegboardCornerPiece = (opts) => {
         const defaults = pegboardDefaults()
@@ -550,7 +550,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      * Generates long piece, which connects pegboard rings along the grid axes
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof pegboard
      */
     const pegboardGridPiece = (opts) => {
         const defaults = pegboardDefaults()
@@ -581,7 +581,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      * Generates cross piece, which connects pegboard rings
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof pegboard
      */
     const pegboardCrossPiece = (opts) => {
         const defaults = pegboardDefaults()
@@ -629,7 +629,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      * Generates edges of pegboard
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof pegboard
      */
     const pegboardEdges = (opts) => {
         const defaults = pegboardDefaults()
@@ -725,7 +725,7 @@ const pegboardInit = ({ jscad, swcadJs }) => {
      * Generates pegboard model
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
-     * @memberof newModelParent
+     * @memberof pegboard
      */
     const pegboard = (opts) => {
         const defaults = pegboardDefaults()
@@ -815,6 +815,10 @@ const pegboardInit = ({ jscad, swcadJs }) => {
         return [mainModel, modelParts, modelProperties]
     }
 
+    /**
+     * Functions modelling various pegboard panels
+     * @namespace pegboard
+     */
     return {
         defaults: pegboardDefaults,
         props: pegboardProps,
