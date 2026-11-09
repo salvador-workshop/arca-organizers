@@ -53,10 +53,12 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
     const {
         standards,
+        constants,
     } = swcadJs.data
 
     const {
         math,
+        position,
     } = swcadJs.calcs
 
 
@@ -95,6 +97,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
                 baseplateSizeLarge: [18.9, 73.8],
                 hookDepthLarge: 27.3,
                 hookWidthLarge: 11.9,
+                straightHookAngle: TAU / 6,
                 interfaceThickness: standards.INTERFACE_THICKNESS,
                 fitGap: standards.FIT_GAP,
             }
@@ -171,6 +174,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
             baseplateSizeLarge,
             hookDepthLarge,
             hookWidthLarge,
+            straightHookAngle,
             interfaceThickness,
             fitGap,
         } = dimConstants
@@ -187,6 +191,8 @@ const hooksInit = ({ jscad, swcadJs }) => {
         const hookDepth = type == 'large' ? hookDepthLarge : hookDepthMedium
         const hookWidth = type == 'large' ? hookWidthLarge : hookWidthMedium
 
+        const straightHookLength = hookDepth / constants.TRI_30_FACTOR * 2
+
         /* ----------------------------------------
         * Preparing Model Properties, Dimensions
         * ------------------------------------- */
@@ -202,13 +208,10 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         /** Various dimensions for model */
         const modelDims = {
-            screwHoleRadius,
-            baseplateCornerRadius,
             baseplateSize,
             hookDepth,
             hookWidth,
-            interfaceThickness,
-            fitGap,
+            straightHookLength,
         }
 
         /** Various key points for model */
@@ -254,6 +257,34 @@ const hooksInit = ({ jscad, swcadJs }) => {
     * MODELLING FUNCTIONS
     * ------------------------------------- */
 
+    const lightLengthReinforcement = (opts) => {
+        const { length, reinfThickness, spineHeight } = opts
+        const spine = cuboid({ size: [length, reinfThickness, spineHeight] })
+        return spine
+    }
+
+    const lightReinforcedLengthUnit = (opts) => {
+        const { size, baseThickness, reinfThickness } = opts
+
+        // Generate flat base
+        const lightReinfUnitBase = reinforcementUnitBase(size[0], size[1], baseThickness)
+        f
+        // Generate reinforcement
+        const lightReinfUnitReinforcement = lightLengthReinforcement({
+            length: size[0],
+            reinfThickness: reinfThickness,
+            spineHeight: size[2],
+        })
+
+        // Combine all pieces
+        const lightReinfUnitAssembly = union(
+            position.ctrMin(lightReinfUnitBase),
+            position.ctrMin(lightReinfUnitReinforcement)
+        )
+
+        return position.ctr(lightReinfUnitAssembly)
+    }
+
     /**
      * New Model 1
      * @param {*} opts 
@@ -264,6 +295,24 @@ const hooksInit = ({ jscad, swcadJs }) => {
         const defaults = hooksDefaults()
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
+
+        const {
+            type
+        } = modelProperties.opts
+
+        const {
+            screwHoleRadius,
+            baseplateCornerRadius,
+            straightHookAngle,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.constants
+
+        const {
+            baseplateSize,
+            hookDepth,
+            hookWidth,
+        } = modelProperties.dims
 
         const mainModel = cuboid()
         const modelParts = {
@@ -284,6 +333,24 @@ const hooksInit = ({ jscad, swcadJs }) => {
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
 
+        const {
+            type
+        } = modelProperties.opts
+
+        const {
+            screwHoleRadius,
+            baseplateCornerRadius,
+            straightHookAngle,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.constants
+
+        const {
+            baseplateSize,
+            hookDepth,
+            hookWidth,
+        } = modelProperties.dims
+
         const mainModel = cuboid()
         const modelParts = {
             mainModel,
@@ -303,6 +370,24 @@ const hooksInit = ({ jscad, swcadJs }) => {
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
 
+        const {
+            type
+        } = modelProperties.opts
+
+        const {
+            screwHoleRadius,
+            baseplateCornerRadius,
+            straightHookAngle,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.constants
+
+        const {
+            baseplateSize,
+            hookDepth,
+            hookWidth,
+        } = modelProperties.dims
+
         const mainModel = cuboid()
         const modelParts = {
             mainModel,
@@ -321,6 +406,24 @@ const hooksInit = ({ jscad, swcadJs }) => {
         const defaults = hooksDefaults()
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
+
+        const {
+            type
+        } = modelProperties.opts
+
+        const {
+            screwHoleRadius,
+            baseplateCornerRadius,
+            straightHookAngle,
+            interfaceThickness,
+            fitGap,
+        } = modelProperties.constants
+
+        const {
+            baseplateSize,
+            hookDepth,
+            hookWidth,
+        } = modelProperties.dims
 
         const mainModel = cuboid()
         const modelParts = {
