@@ -56,6 +56,10 @@ const { colorize } = jscad.colors
 
 const swcadJs = require('swcad-js').init({ jscad });
 
+const {
+    math,
+} = swcadJs.calcs
+
 const hooksModule = require('./src/index.js')
 const hooks = hooksModule.init({ jscad, swcadJs })
 
@@ -81,10 +85,10 @@ const medModels = [
     utilityHookMd,
 ]
 
-const hookBaseplateLg = hooks.hookBaseplate({type: 'large'})[0]
-const screwCutawaysLg = hooks.screwCutaways({type: 'large'})[0]
-const straightHookLg = hooks.straightHook({type: 'large'})[0]
-const utilityHookLg = hooks.utilityHook({type: 'large'})[0]
+const hookBaseplateLg = hooks.hookBaseplate({ type: 'large' })[0]
+const screwCutawaysLg = hooks.screwCutaways({ type: 'large' })[0]
+const straightHookLg = hooks.straightHook({ type: 'large' })[0]
+const utilityHookLg = hooks.utilityHook({ type: 'large' })[0]
 
 const lgModels = [
     hookBaseplateLg,
@@ -92,6 +96,17 @@ const lgModels = [
     straightHookLg,
     utilityHookLg,
 ]
+
+const utilityHookRowMd = hooks.utilityHookRow({
+    rowSpacing: math.inchesToMm(8 / 3),
+    numHooks: 3,
+})[0]
+
+const utilityHookRowLg = hooks.utilityHookRow({
+    rowSpacing: math.inchesToMm(8 / 3),
+    numHooks: 3,
+    type: 'large',
+})[0]
 
 
 //==============================================================================
@@ -115,6 +130,8 @@ function main() {
     return [
         ...outModelsMd,
         ...outModelsLg,
+        translate([0, spaceUnit * 4, 0], utilityHookRowMd),
+        translate([0, spaceUnit * 6, 0], utilityHookRowLg),
     ]
 }
 

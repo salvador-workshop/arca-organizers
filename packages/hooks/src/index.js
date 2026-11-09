@@ -35,7 +35,12 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
     const {
         position,
+        math,
     } = swcadJs.calcs
+
+    const {
+        reinforcements,
+    } = swcadJs.components
 
 
     //==============================================================================
@@ -57,6 +62,10 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         const defaultValues = {
             dims: {
+                rowSpacing: math.inchesToMm(2.5)
+            },
+            opts: {
+                numHooks: 3
             },
             points: {
             },
@@ -76,6 +85,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
                 hookWidthLarge: 11.9,
                 hookReinforcementWidthLarge: standards.INTERFACE_THICKNESS * 4,
                 straightHookAngle: TAU / 6,
+                hookRowConnectorWidth: math.inchesToMm(7 / 8),
                 interfaceThickness: standards.INTERFACE_THICKNESS,
                 fitGap: standards.FIT_GAP,
             }
@@ -88,6 +98,8 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         /** Computed values for option defaults */
         const defaultOpts = {
+            rowSpacing: defaultValues.dims.rowSpacing,
+            numHooks: defaultValues.opts.numHooks,
             ...standardOpts,
         }
 
@@ -114,10 +126,14 @@ const hooksInit = ({ jscad, swcadJs }) => {
         // User options
         const {
             type = defaults.opts.type,
+            rowSpacing = defaults.opts.rowSpacing,
+            numHooks = defaults.opts.numHooks,
         } = opts
 
         const initOpts = {
             type,
+            rowSpacing,
+            numHooks,
         }
 
         return initOpts
@@ -150,6 +166,8 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         const {
             type,
+            rowSpacing,
+            numHooks,
         } = opts
 
         /* ----------------------------------------
@@ -162,6 +180,9 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         const straightHookLength = hookDepth / constants.TRI_30_FACTOR * 2
 
+        const hookRowConnectorLength = rowSpacing - baseplateSize[0] + 1
+        const numConnectors = numHooks >= 2 ? numHooks - 1 : 0
+
         /* ----------------------------------------
         * Preparing Model Properties, Dimensions
         * ------------------------------------- */
@@ -171,15 +192,19 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         /** Derived user options for the model */
         const modelOpts = {
+            numHooks,
+            numConnectors,
             type,
         }
 
         /** Various dimensions for model */
         const modelDims = {
+            rowSpacing,
             baseplateSize,
             hookDepth,
             hookWidth,
             straightHookLength,
+            hookRowConnectorLength,
         }
 
         /** Various key points for model */
@@ -299,11 +324,11 @@ const hooksInit = ({ jscad, swcadJs }) => {
     }
 
     /**
- * New Model 2
- * @param {*} opts 
- * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
- * @memberof hooks
- */
+     * Screw hole cutaways
+     * @param {*} opts 
+     * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
+     * @memberof hooks
+     */
     const screwCutaways = (opts) => {
         const initOpts = hooksOpts(opts)
         const modelProperties = hooksProps(initOpts)
@@ -319,7 +344,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
 
         const cutawayBase = cylinder({
             radius: screwHoleRadius,
-            height: interfaceThickness * 3
+            height: interfaceThickness * 4
         })
 
         const endOffset = baseplateSize[0] / 2
@@ -339,7 +364,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
     }
 
     /**
-     * New Model 1
+     * Baseplate for mounting a hook
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
      * @memberof hooks
@@ -362,14 +387,23 @@ const hooksInit = ({ jscad, swcadJs }) => {
             roundRadius: baseplateCornerRadius
         })
 
-        const baseplateBlank = position.ctr(extrudeLinear(
+        let baseplateBlank = position.ctrMin(extrudeLinear(
             { height: interfaceThickness },
             baseplateProfile
         ))
 
+        const bpSpineOffset = baseplateSize[0]
+        const baseplateSpineLength = baseplateSize[1] - (bpSpineOffset * 2)
+        const baseplateSpine = position.ctrMin(cuboid({
+            size: [interfaceThickness, baseplateSpineLength, interfaceThickness * 2]
+        }))
+        baseplateBlank = union(baseplateBlank, baseplateSpine)
+
         const cutaways = screwCutaways(opts)[0]
 
-        const mainModel = subtract(baseplateBlank, cutaways)
+        const baseplateAssembly = subtract(baseplateBlank, cutaways)
+
+        const mainModel = baseplateAssembly
         const modelParts = {
             mainModel,
         }
@@ -378,7 +412,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
     }
 
     /**
-     * ...
+     * Straight hook component
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
      * @memberof hooks
@@ -439,7 +473,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
     }
 
     /**
-     * ...
+     * Utility hook, using a straight hook component
      * @param {*} opts 
      * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
      * @memberof hooks
@@ -452,18 +486,89 @@ const hooksInit = ({ jscad, swcadJs }) => {
         const strHook = straightHook(opts)[0]
         const strHookDims = measureDimensions(strHook)
 
-
         const strHookAdj = align({
             modes: position.alignModes.ctrMin,
             // relativeTo: [0, 0, 0]
         }, strHook)
 
-        const assembly = union(
+        const utilityHookAssembly = union(
             baseplate,
             strHookAdj,
         )
 
-        const mainModel = assembly
+        const mainModel = utilityHookAssembly
+        const modelParts = {
+            mainModel,
+        }
+
+        return [mainModel, modelParts, modelProperties]
+    }
+
+    /**
+     * A row of utility hooks, using a straight hook component. The hooks are connected by open web joists.
+     * @param {*} opts 
+     * @returns Array with model, parts, and properties: [`geom3`, `Object.<string, geom3>`, `Object.<string, any>`]
+     * @memberof hooks
+     */
+    const utilityHookRow = (opts) => {
+        const initOpts = hooksOpts(opts)
+        const modelProperties = hooksProps(initOpts)
+
+        const {
+            numHooks,
+            numConnectors,
+        } = modelProperties.opts
+
+        const {
+            hookRowConnectorWidth,
+        } = modelProperties.constants
+
+        const {
+            baseplateSize,
+            rowSpacing,
+            hookRowConnectorLength
+        } = modelProperties.dims
+
+        const connectorOpts = {
+            length: hookRowConnectorLength,
+            width: hookRowConnectorWidth,
+            reinforcementLevel: 1,
+        }
+
+        const baseHook = position.ctrMin(utilityHook(opts)[0])
+        const baseConnector = position.ctrMin(
+            rotate(
+                [0, 0, TAU / 4],
+                reinforcements.reinforcedJoist(connectorOpts)[0]
+            )
+        )
+
+        const hookCtrPoints = []
+        for (let hooksIdx = 0; hooksIdx < numHooks; hooksIdx++) {
+            const currentHookX = rowSpacing * hooksIdx
+            hookCtrPoints.push([currentHookX, 0, 0])
+        }
+
+        const connectorCtrPoints = []
+        const connectorStartPt = baseplateSize[0] / 2 + (hookRowConnectorLength / 2)
+        for (let connectorsIdx = 0; connectorsIdx < numConnectors; connectorsIdx++) {
+            const currentConnX = rowSpacing * connectorsIdx + connectorStartPt
+            connectorCtrPoints.push([currentConnX, 0, 0])
+        }
+
+        const hooks = hookCtrPoints.map(hookCtrPt => {
+            return translate(hookCtrPt, baseHook)
+        })
+        const connectors = connectorCtrPoints.map(connectorCtrPt => {
+            return translate(connectorCtrPt, baseConnector)
+        })
+
+        const utilityHookRowAssembly = union(
+            ...hooks,
+            ...connectors,
+        )
+
+        const mainModel = utilityHookRowAssembly
         const modelParts = {
             mainModel,
         }
@@ -482,6 +587,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
         hookBaseplate,
         straightHook,
         utilityHook,
+        utilityHookRow,
     }
 }
 
