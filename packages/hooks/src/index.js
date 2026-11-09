@@ -98,6 +98,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
                 hookDepthLarge: 27.3,
                 hookWidthLarge: 11.9,
                 straightHookAngle: TAU / 6,
+                straightHookReinforcementWidth: standards.INTERFACE_THICKNESS * 3,
                 interfaceThickness: standards.INTERFACE_THICKNESS,
                 fitGap: standards.FIT_GAP,
             }
@@ -203,7 +204,6 @@ const hooksInit = ({ jscad, swcadJs }) => {
         /** Derived user options for the model */
         const modelOpts = {
             type,
-            scale,
         }
 
         /** Various dimensions for model */
@@ -257,18 +257,39 @@ const hooksInit = ({ jscad, swcadJs }) => {
     * MODELLING FUNCTIONS
     * ------------------------------------- */
 
+    const reinforcementUnitBase = (opts) => {
+        const { length, width, baseThickness } = opts
+        return cuboid({ size: [length, width, baseThickness] })
+    }
+
     const lightLengthReinforcement = (opts) => {
         const { length, reinfThickness, spineHeight } = opts
         const spine = cuboid({ size: [length, reinfThickness, spineHeight] })
         return spine
     }
 
+    const mediumLengthReinforcement = (opts) => {
+        const { length, width, reinfThickness, spineHeight } = opts
+        const spine = cuboid({ size: [length, reinfThickness, spineHeight] })
+
+        const spacing = width / 3
+        const spines = [
+            translate([0, spacing / 2, 0], spine),
+            translate([0, spacing / -2, 0], spine),
+        ]
+
+        return union(spines)
+    }
+
     const lightReinforcedLengthUnit = (opts) => {
         const { size, baseThickness, reinfThickness } = opts
 
         // Generate flat base
-        const lightReinfUnitBase = reinforcementUnitBase(size[0], size[1], baseThickness)
-        f
+        const lightReinfUnitBase = reinforcementUnitBase({
+            length: size[0],
+            width: size[1],
+            baseThickness: baseThickness
+        })
         // Generate reinforcement
         const lightReinfUnitReinforcement = lightLengthReinforcement({
             length: size[0],
@@ -283,6 +304,31 @@ const hooksInit = ({ jscad, swcadJs }) => {
         )
 
         return position.ctr(lightReinfUnitAssembly)
+    }
+    const mediumReinforcedLengthUnit = (opts) => {
+        const { size, baseThickness, reinfThickness } = opts
+
+        // Generate flat base
+        const mediumReinfUnitBase = reinforcementUnitBase({
+            length: size[0],
+            width: size[1],
+            baseThickness: baseThickness
+        })
+        // Generate reinforcement
+        const mediumReinfUnitReinforcement = mediumLengthReinforcement({
+            length: size[0],
+            width: size[1],
+            reinfThickness: reinfThickness,
+            spineHeight: size[2],
+        })
+
+        // Combine all pieces
+        const mediumReinfUnitAssembly = union(
+            position.ctrMin(mediumReinfUnitBase),
+            position.ctrMin(mediumReinfUnitReinforcement)
+        )
+
+        return position.ctr(mediumReinfUnitAssembly)
     }
 
     /**
@@ -312,6 +358,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
             baseplateSize,
             hookDepth,
             hookWidth,
+            straightHookLength,
         } = modelProperties.dims
 
         const mainModel = cuboid()
@@ -349,6 +396,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
             baseplateSize,
             hookDepth,
             hookWidth,
+            straightHookLength,
         } = modelProperties.dims
 
         const mainModel = cuboid()
@@ -378,6 +426,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
             screwHoleRadius,
             baseplateCornerRadius,
             straightHookAngle,
+            straightHookReinforcementWidth,
             interfaceThickness,
             fitGap,
         } = modelProperties.constants
@@ -386,9 +435,37 @@ const hooksInit = ({ jscad, swcadJs }) => {
             baseplateSize,
             hookDepth,
             hookWidth,
+            straightHookLength,
         } = modelProperties.dims
 
-        const mainModel = cuboid()
+        console.log(type, straightHookLength, hookWidth)
+        let hookBase = null
+        if (type == 'large') {
+            hookBase = mediumReinforcedLengthUnit({
+                size: [straightHookLength, hookWidth, straightHookReinforcementWidth],
+                baseThickness: interfaceThickness,
+                reinfThickness: interfaceThickness,
+            })
+        } else {
+            hookBase = lightReinforcedLengthUnit({
+                size: [straightHookLength, hookWidth, straightHookReinforcementWidth],
+                baseThickness: interfaceThickness,
+                reinfThickness: interfaceThickness,
+            })
+        }
+
+        const hookBaseCutOffset = interfaceThickness * -1.555
+
+        let hookAdj = rotate([0, 0, TAU / 4], hookBase)
+        hookAdj = rotate([straightHookAngle, 0, 0], hookAdj)
+        hookAdj = align({
+            modes: position.alignModes.ctrMin,
+            relativeTo: [0, 0, hookBaseCutOffset]
+        }, hookAdj)
+
+        const baseCutAway = position.ctrMax(cuboid({ size: [hookDepth, hookDepth, hookDepth] }))
+
+        const mainModel = subtract(hookAdj, baseCutAway)
         const modelParts = {
             mainModel,
         }
@@ -423,6 +500,7 @@ const hooksInit = ({ jscad, swcadJs }) => {
             baseplateSize,
             hookDepth,
             hookWidth,
+            straightHookLength,
         } = modelProperties.dims
 
         const mainModel = cuboid()

@@ -56,8 +56,8 @@ const { colorize } = jscad.colors
 
 const swcadJs = require('swcad-js').init({ jscad });
 
-const pegboardModule = require('./src/index.js')
-const pegboard = pegboardModule.init({ jscad, swcadJs })
+const hooksModule = require('./src/index.js')
+const hooks = hooksModule.init({ jscad, swcadJs })
 
 const inchesToMm = (numIn) => numIn * 25.4
 
@@ -69,23 +69,53 @@ const inchesToMm = (numIn) => numIn * 25.4
  * Test subjects
  * ------------------------------------- */
 
-const gridLatticeModel = cuboid()
+const hookBaseplateMd = hooks.hookBaseplate({})[0]
+const screwCutawaysMd = hooks.screwCutaways({})[0]
+const straightHookMd = hooks.straightHook({})[0]
+const utilityHookMd = hooks.utilityHook({})[0]
 
+const medModels = [
+    hookBaseplateMd,
+    screwCutawaysMd,
+    straightHookMd,
+    utilityHookMd,
+]
+
+const hookBaseplateLg = hooks.hookBaseplate({type: 'large'})[0]
+const screwCutawaysLg = hooks.screwCutaways({type: 'large'})[0]
+const straightHookLg = hooks.straightHook({type: 'large'})[0]
+const utilityHookLg = hooks.utilityHook({type: 'large'})[0]
+
+const lgModels = [
+    hookBaseplateLg,
+    screwCutawaysLg,
+    straightHookLg,
+    utilityHookLg,
+]
 
 
 //==============================================================================
 
 
 
+const spaceUnit = inchesToMm(1.5)
 
 /**
  * Main function to be rendered by JSCAD
  * @returns `geom3` or `geom3[]`
  */
 function main() {
-    const spaceUnit = inchesToMm(3.5)
+    const outModelsMd = medModels.map((oModelMd, idx) => {
+        return translate([idx * spaceUnit, 0, 0], oModelMd)
+    })
+    const outModelsLg = lgModels.map((oModelLg, idx) => {
+        return translate([idx * spaceUnit, spaceUnit, 0], oModelLg)
+    })
 
-    return gridLatticeModel
+    return [
+        ...outModelsMd,
+        ...outModelsLg,
+    ]
 }
 
 
