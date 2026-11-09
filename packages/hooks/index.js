@@ -81,10 +81,10 @@ const medModels = [
     utilityHookMd,
 ]
 
-const hookBaseplateLg = hooks.hookBaseplate({type: 'large'})[0]
-const screwCutawaysLg = hooks.screwCutaways({type: 'large'})[0]
-const straightHookLg = hooks.straightHook({type: 'large'})[0]
-const utilityHookLg = hooks.utilityHook({type: 'large'})[0]
+const hookBaseplateLg = hooks.hookBaseplate({ type: 'large' })[0]
+const screwCutawaysLg = hooks.screwCutaways({ type: 'large' })[0]
+const straightHookLg = hooks.straightHook({ type: 'large' })[0]
+const utilityHookLg = hooks.utilityHook({ type: 'large' })[0]
 
 const lgModels = [
     hookBaseplateLg,
@@ -92,6 +92,17 @@ const lgModels = [
     straightHookLg,
     utilityHookLg,
 ]
+
+const utilityHookRowMd = hooks.utilityHookRow({
+    rowSpacing: 50,
+    numHooks: 3,
+})[0]
+
+const utilityHookRowLg = hooks.utilityHookRow({
+    rowSpacing: 50,
+    numHooks: 3,
+    type: 'large',
+})[0]
 
 
 //==============================================================================
@@ -115,6 +126,8 @@ function main() {
     return [
         ...outModelsMd,
         ...outModelsLg,
+        translate([0, spaceUnit * 4, 0], utilityHookRowMd),
+        translate([0, spaceUnit * 6, 0], utilityHookRowLg),
     ]
 }
 
